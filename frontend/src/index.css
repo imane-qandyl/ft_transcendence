@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Pixel Font */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* Base styles */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    image-rendering: pixelated;
+  }
+
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: #0f0f1b;
+    color: #c8c8d4;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    line-height: 1.8;
+  }
+
+  /* Pixel-style scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1a1a2e;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #4a4a68;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9b5de5;
+  }
+}
+
+/* Pixel button base */
+@layer components {
+  .pixel-btn {
+    @apply px-4 py-3 bg-pixel-mid border-3 border-pixel-light text-pixel-white uppercase tracking-wider;
+    box-shadow: 4px 4px 0px #0f0f1b;
+    transition: all 0.1s ease;
+  }
+
+  .pixel-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #0f0f1b;
+  }
+
+  .pixel-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+  }
+
+  .pixel-btn-primary {
+    @apply bg-retro-purple border-retro-purple text-pixel-black;
+  }
+
+  .pixel-card {
+    @apply bg-pixel-dark border-3 border-pixel-light p-4;
+    box-shadow: 4px 4px 0px #0f0f1b;
+  }
+
+  .pixel-input {
+    @apply w-full bg-pixel-black border-3 border-pixel-light px-3 py-2 text-pixel-white;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+  }
+
+  .pixel-input:focus {
+    @apply outline-none border-retro-purple;
+  }
+}
+
+/* Game container styles */
+.game-canvas-wrapper {
+  @apply flex justify-center items-center min-h-full w-full;
+  background-color: #0f0f1b;
+}
+
+#game-container {
+  @apply max-w-full w-full h-full;
+}
+
+/* Fullscreen styles */
+#game-container:fullscreen,
+#game-container:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: #0f0f1b;
+}
+
+#game-container:fullscreen canvas,
+#game-container:-webkit-full-screen canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+
+/* Pixel blink animation */
+@keyframes pixel-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.pixel-blink {
+  animation: pixel-blink 1s step-end infinite;
+}

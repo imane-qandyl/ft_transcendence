@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "fastify": "^4.29.1",
+    "redoc": "^2.5.2"
+  }
+}

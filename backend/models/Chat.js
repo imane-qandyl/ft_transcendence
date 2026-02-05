@@ -1,0 +1,241 @@
+const CustomError = require("../errors");
+class Chat {
+	constructor(db) {
+		this.db = db;
+	}
+
+	async getChatBetweenUsers(user1Id, user2Id) {
+		// Control path where the user tries to fetch a chat with themselves (not allowed since we do not support self-chat)
+		if (user1Id.toString() === user2Id.toString()) {
+			throw new CustomError.NotFoundError(`No such chat was found`);
+		}
+		// This technique is called a self-join (see Note 1)
+		const chatWithUser2 = await this.db("chat_participants as cp1")
+			.join("chat_participants as cp2", "cp1.chat_id", "cp2.chat_id")
+			.where("cp1.user_id", user1Id)
+			.andWhere("cp2.user_id", user2Id)
+			.first();
+		// Control path where the user has never chatted with user2 before, must create a chat instead
+		if (!chatWithUser2) {
+			throw new CustomError.NotFoundError(`No such chat was found`);
+		}
+
+		return chatWithUser2.chat_id;
+	}
+
+	async getAllUserChats(user1Id) {
+		const chatsData = await this.db("chat_participants as cp1")
+			.join("chat_participants as cp2", "cp1.chat_id", "cp2.chat_id")
+			.join("chats", "cp1.chat_id", "chats.id")
+			.join("users as u2", "cp2.user_id", "u2.id")
+			.select(
+				"cp1.chat_id as id",
+				"cp2.user_id as participantId",
+				"u2.username as other_user_username",
+				"chats.updated_at"
+			)
+			.where("cp1.user_id", user1Id)
+			.andWhereNot("cp2.user_id", user1Id)
+			// Note 2
+			.whereExists(function () {
+				this.select("*")
+					.from("messages")
+					.whereRaw("messages.chat_id = cp1.chat_id")
+					.andWhere(function () {
+						this.where(function () {
+							this.whereRaw(
+								"messages.sender_id = cp2.user_id"
+							).andWhere("messages.blocks_active", false);
+						}).orWhereRaw("messages.sender_id = cp1.user_id");
+					});
+			})
+			.orderBy("chats.updated_at", "desc");
+
+		// Add unread message count and last message for each chat
+		const chatsWithDetails = await Promise.all(chatsData.map(async (chat) => {
+			// Get unread count
+			const unreadCount = await this.db("messages")
+				.where({
+					chat_id: chat.id,
+					sender_id: chat.participantId,
+					is_read: false,
+					blocks_active: false
+				})
+				.count("* as count")
+				.first();
+
+			// Get last message
+			const lastMessage = await this.db("messages")
+				.where({ chat_id: chat.id })
+				.andWhere(function () {
+					this.where("blocks_active", false).orWhere(function () {
+						this.where("blocks_active", true).andWhere(
+							"sender_id",
+							user1Id
+						);
+					});
+				})
+				.orderBy("created_at", "desc")
+				.first();
+
+			return {
+				...chat,
+				unread_count: unreadCount ? unreadCount.count : 0,
+				last_message: lastMessage ? lastMessage.content : null,
+				last_message_time: lastMessage ? lastMessage.created_at : null
+			};
+		}));
+
+		return chatsWithDetails;
+	}
+
+	async createChatBetweenUsers(user1Id, user2Id) {
+		// Self-join technique to check if chat already exists (see Note 1)
+		const chatWithUser2 = await this.db("chat_participants as cp1")
+			.join("chat_participants as cp2", "cp1.chat_id", "cp2.chat_id")
+			.where("cp1.user_id", user1Id)
+			.andWhere("cp2.user_id", user2Id)
+			.first();
+		const user2 = await this.db("users").where({ id: user2Id }).first();
+		const chatWithSelf = user1Id.toString() === user2Id.toString();
+		// Control path where user is attempting to start a chat with themselves
+		if (chatWithSelf) {
+			throw new CustomError.BadRequestError(
+				"Unable to create chat: cannot initiatie chat with oneself!"
+			);
+		}
+		// Control path where the user has already has a chat with user2, must get the chat instead
+		if (chatWithUser2) {
+			throw new CustomError.BadRequestError(
+				`Unable to create chat: chat with user '${user2.username}' already exists!`
+			);
+		}
+		// Control path where user2 is not in the database
+		if (!user2) {
+			throw new CustomError.BadRequestError(
+				`Unable to create chat: user with id ${user2Id} not found!`
+			);
+		}
+
+		// Insert a chat into the "chats" table, then fill the "chat_participants" table
+		const [chatId] = await this.db("chats").insert({}).returning("id");
+		// Insert the chat details into the "chat_participants" join table
+		await this.db("chat_participants").insert([
+			{ chat_id: chatId, user_id: user1Id },
+			{ chat_id: chatId, user_id: user2Id },
+		]);
+
+		return chatId;
+	}
+
+	async createMessage(senderId, chatId, content) {
+		const chatRows = await this.db("chat_participants").where({
+			chat_id: chatId,
+		});
+		const chatParticipantIds = chatRows.map((row) => row.user_id);
+		// Control path where the user tries to send a message in a chatroom he does not belong to
+		if (!chatParticipantIds.includes(senderId)) {
+			throw new CustomError.UnauthorizedError(
+				"Access Denied! Unable to send message"
+			);
+		}
+
+		const receiverIsBlocked = await this.db("blocks")
+			.where({
+				blocker_id: senderId,
+				blocked_id: chatParticipantIds.find((id) => id !== senderId),
+			})
+			.first();
+		if (receiverIsBlocked) {
+			throw new CustomError.UnauthorizedError(
+				"Access Denied! You have blocked this user"
+			);
+		}
+		const isSenderBlocked = await this.db("blocks")
+			.where({
+				blocker_id: chatParticipantIds.find((id) => id !== senderId),
+				blocked_id: senderId,
+			})
+			.first();
+
+		// Add the message to the database
+		const [message] = await this.db("messages")
+			.insert({
+				chat_id: chatId,
+				sender_id: senderId,
+				content: content,
+				blocks_active: isSenderBlocked ? true : false,
+			})
+			.returning("*");
+
+		// Update the updated_at timestamp of the chat in the "chats" table
+		await this.db("chats")
+			.where({ id: chatId })
+			.update({
+				updated_at: this.db.raw("CURRENT_TIMESTAMP"),
+			});
+
+		// Obtain the receiver's id for the chat notification service to use
+		const receiverUserId = chatParticipantIds.find((id) => id !== senderId);
+
+		return { message, receiverUserId, isSenderBlocked };
+	}
+
+	async getMessages(userId, chatId) {
+		const chatRows = await this.db("chat_participants").where({
+			chat_id: chatId,
+		});
+		const chatParticipantIds = chatRows.map((row) => row.user_id);
+		// Control path where the user tries to obtain the messages in a chatroom he does not belong to
+		if (!chatParticipantIds.includes(userId)) {
+			throw new CustomError.UnauthorizedError(
+				"Access denied! Unable to retrieve messages"
+			);
+		}
+		const messages = await this.db("messages")
+			.where({ chat_id: chatId })
+			.andWhere(function () {
+				this.where("blocks_active", false).orWhere(function () {
+					this.where("blocks_active", true).andWhere(
+						"sender_id",
+						userId
+					);
+				});
+			})
+			.orderBy("created_at", "asc");
+		
+		// Add is_own_message flag to each message
+		return messages.map(msg => ({
+			...msg,
+			is_own_message: msg.sender_id === userId
+		}));
+	}
+
+	async markMessagesAsRead(userId, chatId) {
+		// Mark all messages in this chat that are not from this user as read
+		await this.db("messages")
+			.where({ chat_id: chatId })
+			.andWhereNot("sender_id", userId)
+			.andWhere("is_read", false)
+			.update({
+				is_read: true,
+				read_at: this.db.raw("CURRENT_TIMESTAMP")
+			});
+	}
+
+	async getUnreadCount(userId, otherUserId) {
+		// Get count of unread messages from a specific user
+		const chatId = await this.getChatBetweenUsers(userId, otherUserId);
+		
+		const count = await this.db("messages")
+			.where({ chat_id: chatId, sender_id: otherUserId, is_read: false })
+			.andWhere("blocks_active", false)
+			.count("* as count")
+			.first();
+		
+		return count ? count.count : 0;
+	}
+}
+
+module.exports = Chat;
+

@@ -1,0 +1,124 @@
+Backend Tech & Core Setup
+
+Choose backend stack:
+
+If Web module chosen = Fastify (Node.js) + SQLite.
+
+Dockerize everything → one command to launch.
+
+🔹 Database & API Skeleton
+
+Design DB schema: Users, Matches, Tournaments, Scores, Friends.
+
+Expose structured API (REST/WebSocket) for frontend.
+
+🔹 Authentication & User Management
+
+Secure registration/login.           [✔️ in User model]
+JWT-based sessions.                  [✔️ in User model]
+Password hashing (bcrypt/argon2).    [✔️ using bcrypt in User model]
+2FA (TOTP app, SMS, or email).       [✔️ TOTP app in User model]
+Remote authentication with Google Sign-in (OAuth2). [✔️ Google OAuth2 in User model]
+
+// User model now supports JWT, bcrypt, TOTP(One-Time Password, generates a secret key) 2FA(can't log in without the 2FA code), 
+and Google OAuth2 login(Google sends your backend a token.).
+// Implement endpoints in routes/controllers to use these features.
+
+🔹 Gameplay Backend
+
+Tournament system (matchmaking, brackets, scores).
+
+🔹 Security
+
+Enforce HTTPS 
+
+Protect against SQL Injection & XSS.
+
+🔹 Deployment / DevOps
+
+Backend runs in Docker.
+
+Logs & monitoring (if modules chosen).
+
+PACKEGE.JSON
+//Required for installing dependencies (npm install) and running your backend (npm run start).
+
+
+
+
+
+* Use knex instead of rawSQL to create tables and to query the Database
+* Split the code into routes, controllers, and model functions (where model functions are the ones that query the database), amd 
+    the schema folder [where schema is validation schemas, the ones you attach before the routes in Fastify], migration folder
+
+Reject the request - Don't process it
+Return appropriate error - 400 for bad request format or 401 for missing auth
+Not accept password in body - This endpoint shouldn't expect passwords
+Require proper authentication - JWT token, session cookie, etc.
+
+//////////////////security vulnerability ////////////////
+
+API endpoints
+
+POST http://{{URL}}/auth/register
+
+POST http://{{URL}}/auth/login
+
+POST http://{{URL}}/auth/profile
+
+POST http://{{URL}}/auth/me
+
+PUT http://{{URL}}/notifications/1/read
+
+PUT http://{{URL}}/notifications/messages/456/read
+
+PUT http://{{URL}}/notifications/mark-all-opened
+
+GET http://{{URL}}/notifications/other?page=1&limit=20
+
+POST http://{{URL}}/matches
+{
+    "player2_id": 2,
+    "game_type": "classic"
+}
+
+PUT http://{{URL}}/matches/:matchId
+{
+  "player1_score": 5,
+  "player2_score": 3,
+  "winner_id": 5,
+  "status": "completed"
+}
+
+DELETE http://{{URL}}/matches/2
+
+GET http://{{URL}}/matches
+
+POST /api/v1/chats/ -> create chat
+GET /api/v1/chats/ -> list user chats
+GET /api/v1/chats/between/:user2Id -> get chat id between users
+GET /api/v1/chats/:chatId/messages -> list messages
+POST /api/v1/chats/:chatId/messages -> send message
+
+POST /requests -> sendRequest
+GET / -> list friends
+GET friends//requests/sent -> list sent requests
+GET friends//requests/received -> list received requests
+PUT friends/requests/:friendshipId/respond -> accept/decline
+DELETE friends/friendships/:friendshipId -> cancel/unfriend
+
+ENVIREMENTS
+
+URL = localhost:3000/api/v1
+
+{{authToken}}
+
+
+
+PUT You expected an update
+POST creation
+GET never has a body.
+DELETE Deletion should be done by URL only.
+
+
+Knex.js (or similar query builder) for database access

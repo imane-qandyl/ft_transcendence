@@ -1,0 +1,142 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../services/api';
+
+const AuthContext = createContext();
+
+const logError = (...args) => {
+  console.error('[AuthContext ERROR]', ...args);
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Set user state with token - you could verify token here by calling /me endpoint
+      const user = { token, isAuthenticated: true };
+      setUser(user);
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (emailOrUsername, password) => {
+    try {
+      // Determine if input is email or username
+      const isEmail = emailOrUsername.includes('@');
+      const requestBody = isEmail
+        ? { email: emailOrUsername, password }
+        : { username: emailOrUsername, password };
+
+      const response = await api.post('/api/v1/auth/login', requestBody);
+      
+      const { token, user: userData } = response.data;
+      
+      localStorage.setItem('token', token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      const userState = { ...userData, token };
+      setUser(userState);
+      
+      return { success: true };
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      logError('Login failed:', { status: error.response?.status, message: errorMsg });
+      return { 
+        success: false, 
+        error: errorMsg
+      };
+    }
+  };
+
+  const register = async (username, email, password) => {
+    try {
+      const response = await api.post('/api/v1/auth/register', {
+        username,
+        email,
+        password
+      });
+      
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      logError('Registration failed:', { status: error.response?.status, message: errorMsg });
+      return { 
+        success: false, 
+        error: errorMsg
+      };
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    delete api.defaults.headers.common['Authorization'];
+    setUser(null);
+  };
+
+  const googleSignIn = async (googleToken) => {
+    try {
+      if (!googleToken) {
+        logError('No Google token provided');
+        return { success: false, error: 'No Google token provided' };
+      }
+      
+      const response = await api.post('/api/v1/auth/google', {
+        token: googleToken,
+        deviceId: 'web-browser-' + Date.now() // Simple device ID
+      });
+      
+      const { token, user: userData } = response.data;
+      
+      if (!token) {
+        logError('No token in Google auth response:', response.data);
+        return { success: false, error: 'No authentication token received' };
+      }
+      
+      // Store token and set auth header
+      localStorage.setItem('token', token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      const userState = { ...userData, token };
+      setUser(userState);
+      
+      return { success: true, user: userState };
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      logError('Google sign-in failed:', { 
+        status: error.response?.status, 
+        message: errorMsg,
+        fullError: error.response?.data 
+      });
+      return { 
+        success: false, 
+        error: errorMsg || 'Google sign-in failed'
+      };
+    }
+  };
+
+  const value = {
+    user,
+    login,
+    register,
+    googleSignIn,
+    logout,
+    loading
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

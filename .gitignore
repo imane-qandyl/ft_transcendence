@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+*/node_modules/
+backend/.env
+frontend/.env
+# Cache files
+.cache/
+*/.cache/
+
+# Build files
+build/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Database
+# *.sqlite3
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

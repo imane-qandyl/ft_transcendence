@@ -1,0 +1,70 @@
+what's done:
+
+Database Schema: Comprehensive SQLite setup with proper migrations, foreign keys, and indexes
+Authentication: JWT implementation with 2FA support and Google OAuth
+Core Features: Chat, friends, matches, and notifications are functionally implemented
+Architecture: Clean MVC pattern with proper separation of concerns
+Error Handling: Well-structured custom error classes
+
+
+
+
+Model / Service (business logic + database logic)
+Controller (HTTP logic)
+Connects HTTP requests to your model
+Routes (URL mapping)
+Purpose:
+Bind URLs + HTTP methods to controllers
+
+
+/////////////chat /////////////////
+
+Prevents self-chat
+Self-join: this says fetch any chat where user A is a participant and there is a message sent by user B (cp2.user_id) that is not blocked. 
+Protection rules
+
+
+❌ Chat must not already exist
+❌ User2 must exist 
+✔ Prevents self-chat ❌ Cannot chat with yourself
+✔ Enforces chat membership
+✔ Handles blocking cleanly
+✔ Uses soft-blocking (blocks_active)
+✔ Efficient SQL with joins
+✔ Clean separation of concerns
+
+
+Common errors:
+400 Bad Request — missing user2_id or trying to create chat with yourself
+404 Not Found — user with id 42 doesn't exist
+401 Unauthorized — missing/invalid JWT
+
+
+
+////////////friends////////////
+
+✅ Receiver exists
+
+❌ Sender ≠ Receiver
+
+❌ Sender has blocked receiver → error
+
+⚠️ Receiver blocked sender → request still created, but no notification
+
+❌ Friendship already exists (accepted or pending)
+Request exists
+
+Only the receiver can respond
+
+Cannot accept twice
+
+Cannot act on cancelled requests
+
+Cancel a pending request (sender only)
+
+Unfriend an accepted friend (either user)
+❌ Cannot modify declined requests
+
+❌ Cannot unfriend twice
+
+❌ Only sender can cancel pending request
