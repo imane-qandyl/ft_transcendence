@@ -40,60 +40,95 @@ const Notifications = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading notifications...</div>;
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-retro-purple text-xs pixel-blink">LOADING NOTIFICATIONS...</div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>Notifications</h1>
-        {notifications.length > 0 && (
-          <button onClick={markAllAsRead} className="btn btn-secondary">
-            Mark All as Read
+    <div className="p-4 h-full overflow-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-retro-purple text-lg pixel-text">
+          [*] NOTIFICATIONS
+        </h1>
+        {notifications.some(n => !n.is_read) && (
+          <button
+            onClick={markAllAsRead}
+            className="pixel-btn text-xs bg-retro-purple border-retro-purple text-pixel-black hover:brightness-110"
+          >
+            MARK ALL READ
           </button>
         )}
       </div>
-      
-      <div className="card">
+
+      {/* Content */}
+      <div className="space-y-3">
         {notifications.length === 0 ? (
-          <p style={{ color: '#666', fontStyle: 'italic' }}>
-            No notifications yet. You'll see friend requests, game invites, and other updates here.
-          </p>
+          <div className="pixel-card p-6 text-center">
+            <div className="text-pixel-mid text-xs mb-2">[EMPTY INBOX]</div>
+            <p className="text-pixel-light text-xs">
+              NO NOTIFICATIONS YET.<br/>
+              FRIEND REQUESTS, GAME INVITES,<br/>
+              AND OTHER UPDATES APPEAR HERE.
+            </p>
+          </div>
         ) : (
-          <div>
-            {notifications.map((notification) => (
-              <div key={notification.id} style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                padding: '15px', 
-                border: '1px solid #ddd', 
-                borderRadius: '4px', 
-                marginBottom: '10px',
-                backgroundColor: notification.is_read ? '#f8f9fa' : '#fff3cd'
-              }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: '0 0 5px 0', fontWeight: notification.is_read ? 'normal' : 'bold' }}>
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`pixel-card p-4 ${
+                notification.is_read
+                  ? 'bg-pixel-black border-pixel-light'
+                  : 'bg-retro-purple/10 border-retro-purple'
+              }`}
+            >
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs mb-2 ${
+                    notification.is_read 
+                      ? 'text-pixel-light' 
+                      : 'text-pixel-white font-bold'
+                  }`}>
                     {notification.message}
                   </p>
-                  <small style={{ color: '#666' }}>
-                    {new Date(notification.created_at).toLocaleString()}
-                  </small>
+                  <div className="text-[8px] text-pixel-mid">
+                    {new Date(notification.created_at).toLocaleString('en-US', {
+                      month: '2-digit',
+                      day: '2-digit', 
+                      year: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }).replace(/\//g, '.').replace(',', ' @')}
+                  </div>
                 </div>
+                
                 {!notification.is_read && (
-                  <button 
+                  <button
                     onClick={() => markAsRead(notification.id)}
-                    className="btn btn-primary"
-                    style={{ fontSize: '12px', padding: '5px 10px' }}
+                    className="px-2 py-1 bg-retro-green border-2 border-retro-green text-pixel-black text-[8px] hover:brightness-110 shrink-0"
                   >
-                    Mark as Read
+                    READ
                   </button>
                 )}
               </div>
-            ))}
-          </div>
+              
+              {!notification.is_read && (
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-retro-red border border-pixel-black"></div>
+              )}
+            </div>
+          ))
         )}
       </div>
+
+      {/* Status */}
+      {notifications.length > 0 && (
+        <div className="mt-6 text-center text-pixel-mid text-[8px]">
+          {notifications.filter(n => !n.is_read).length} UNREAD / {notifications.length} TOTAL
+        </div>
+      )}
     </div>
   );
 };

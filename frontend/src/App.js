@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components';
 import GameLayout from './components/GameLayout';
-import { Home, Login, Register, Character, Matches, Settings, Shop } from './pages';
+import { Home, Login, Register, Character, Matches, Settings, Shop, Notifications } from './pages';
 import Play from './pages/Play';
 import Profile from './pages/Profile';
 
@@ -80,6 +80,16 @@ function App() {
               <ProtectedRoute>
                 <GameLayout>
                   <Shop />
+                </GameLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <GameLayout>
+                  <Notifications />
                 </GameLayout>
               </ProtectedRoute>
             }

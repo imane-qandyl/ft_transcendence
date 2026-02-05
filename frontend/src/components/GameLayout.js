@@ -2,16 +2,18 @@
  * GameLayout - Main game client layout with pixel art style
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import FriendsPanel from './FriendsPanel';
+import api from '../services/api';
 
 const GameLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showFriends, setShowFriends] = useState(true);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const handleLogout = () => {
     logout();
@@ -27,6 +29,29 @@ const GameLayout = ({ children }) => {
     { path: '/shop', icon: '$', label: 'SHOP' },
     { path: '/profile', icon: '%', label: 'PROFILE' },
   ];
+
+  // Fetch unread notifications count
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchNotifications = async () => {
+      try {
+        const response = await api.get('/api/v1/notifications/others');
+        const notifications = response.data.data || [];
+        const unreadCount = notifications.filter(n => !n.is_read).length;
+        setUnreadNotifications(unreadCount);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+    
+    fetchNotifications();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
 
   if (!user) {
     return <>{children}</>;
@@ -63,6 +88,23 @@ const GameLayout = ({ children }) => {
           >
             [+]
           </button>
+
+          <Link
+            to="/notifications"
+            className={`px-2 py-1 border-3 text-xs relative ${
+              isActive('/notifications')
+                ? 'bg-retro-purple border-retro-purple text-pixel-black'
+                : 'bg-pixel-mid border-pixel-light text-pixel-white hover:border-retro-purple hover:text-retro-purple'
+            }`}
+            title="Notifications"
+          >
+            [*]
+            {unreadNotifications > 0 && (
+              <span className="absolute -top-1 -right-1 bg-retro-red text-pixel-white text-[8px] px-1 min-w-[12px] h-3 flex items-center justify-center border border-pixel-black">
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            )}
+          </Link>
 
           <button
             onClick={handleLogout}
