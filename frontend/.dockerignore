@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build output (will be created in container)
+build
+dist
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Development files
+.git
+.gitignore
+*.md
+README
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files
+coverage
+.nyc_output
