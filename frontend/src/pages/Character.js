@@ -127,7 +127,6 @@ const Character = () => {
   if (!character) {
     return (
       <div className="h-full p-4 overflow-auto">
-        <div className="text-center text-retro-red text-xs mb-4">NO CHARACTER FOUND</div>
         <CharacterCreate
           onCharacterCreated={data => {
             setCharacter(data.character);

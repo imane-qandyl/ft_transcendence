@@ -1,8 +1,8 @@
 # Backend Dockerfile
 FROM node:20-alpine
 
-# Install build dependencies for native modules (bcrypt, sqlite3)
-RUN apk add --no-cache python3 make g++ sqlite
+# Install build dependencies for native modules (bcrypt, sqlite3) and curl for health checks
+RUN apk add --no-cache python3 make g++ sqlite curl
 
 # Set working directory
 WORKDIR /app
@@ -24,7 +24,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/health || exit 1
+    CMD curl -f http://localhost:3000/health || exit 1
 
 # Run migrations and start server
 CMD ["sh", "-c", "npm run setup && npm start"]

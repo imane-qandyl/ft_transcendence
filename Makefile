@@ -9,52 +9,50 @@ all: up
 # Build all containers
 build:
 	@echo "Building Docker containers..."
-	docker-compose build
+	docker compose build
 
 # Generate SSL certificates and start all services
 up:
 	@echo "Starting ft_transcendence..."
 	@mkdir -p ssl
-	docker-compose up ssl-generator
-	docker-compose up -d backend frontend
+	docker compose up ssl-generator
+	docker compose up -d backend frontend
 	@echo ""
 	@echo "============================================"
 	@echo "ft_transcendence is running!"
 	@echo "============================================"
-	@echo "Access the application at: https://localhost"
+	@echo "Access the application at: https://localhost:8443"
 	@echo ""
-	@echo "Note: Your browser may warn about the self-signed"
-	@echo "certificate. This is normal for development."
 	@echo "============================================"
 
 # Start in foreground (with logs)
 up-logs:
 	@mkdir -p ssl
-	docker-compose up ssl-generator
-	docker-compose up backend frontend
+	docker compose up ssl-generator
+	docker compose up backend frontend
 
 # Stop all services
 down:
 	@echo "Stopping ft_transcendence..."
-	docker-compose down
+	docker compose down
 
 # Stop and remove volumes (clean slate)
 clean:
 	@echo "Cleaning up ft_transcendence..."
-	docker-compose down -v --rmi local
+	docker compose down -v --rmi local
 	rm -rf ssl/
 
 # View logs
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 # View backend logs only
 logs-backend:
-	docker-compose logs -f backend
+	docker compose logs -f backend
 
 # View frontend logs only
 logs-frontend:
-	docker-compose logs -f frontend
+	docker compose logs -f frontend
 
 # Restart all services
 restart: down up
@@ -67,11 +65,11 @@ ssl:
 	@echo "Regenerating SSL certificates..."
 	rm -rf ssl/
 	mkdir -p ssl
-	docker-compose up ssl-generator
+	docker compose up ssl-generator
 
 # Check service status
 status:
-	docker-compose ps
+	docker compose ps
 
 # Help
 help:

@@ -1,14 +1,8 @@
 const fastify = require("fastify")({
-	logger: {
-		level: process.env.LOG_LEVEL || "info",
-		transport: process.env.NODE_ENV !== 'production' ? {
-			target: "pino-pretty",
-			options: {
-				colorize: true,
-				translateTime: "SYS:standard",
-				ignore: "pid,hostname",
-			},
-		} : undefined,
+	logger: process.env.NODE_ENV === 'production' ? {
+		level: process.env.LOG_LEVEL || "info"
+	} : {
+		level: process.env.LOG_LEVEL || "info"
 	},
 });
 
@@ -44,7 +38,11 @@ const start = async () => {
 		await fastify.register(require('@fastify/cors'), {
 			origin: process.env.NODE_ENV === 'production' 
 				? [process.env.FRONTEND_URL || 'http://localhost:3000']
-				: true, // Allow all origins in development
+				: [
+					'http://localhost:3001',
+					'https://localhost:8443',
+					'http://localhost:3000'
+				], // Allow frontend and dev origins
 			credentials: true,
 			methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 		});
