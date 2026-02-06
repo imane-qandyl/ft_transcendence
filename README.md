@@ -127,7 +127,50 @@ npm start
 - **Damage Calculation** incorporating all character stats
 - **Victory Conditions** with comprehensive battle results
 
-### 3. Territory Wars (My Favorite Feature)
+### 3. AI Opponent System (Smart Enemies That Actually Challenge You!)
+This was one of those features we didn't plan on implementing, but once we started, we couldn't stop. Our AI isn't just a random button-masher - it actually thinks about its moves!
+
+#### How the AI Works
+- **Dynamic Difficulty Scaling** - The AI automatically matches your skill level by analyzing your character's stats and ELO rating
+- **Intelligent Decision Making** - Uses weighted probability systems to choose between attack, defend, and special moves based on:
+  - Current health ratios (yours vs AI's)
+  - Turn number and battle progression
+  - Stat advantages/disadvantages
+  - Critical hit chances and luck factors
+- **Realistic Thinking Delays** - 2-second pauses before moves (because even AI needs to "think")
+
+#### AI Difficulty Levels
+The system creates opponents that scale with your progress:
+
+- **Easy AI** (Levels 1-2, ELO < 900): "Rookie Bot", "Training Dummy"
+  - Makes suboptimal choices 30% of the time
+  - Overly defensive, rarely uses special attacks
+  - Perfect for learning the game mechanics
+
+- **Medium AI** (Levels 3-5, ELO < 1100): "Street Fighter", "Cyber Punk" 
+  - Balanced gameplay with occasional mistakes (15% suboptimal plays)
+  - Good mix of offensive and defensive strategies
+  - Challenges you without being unfair
+
+- **Hard AI** (Levels 6-10, ELO < 1300): "Elite Enforcer", "Combat Veteran"
+  - Plays optimally most of the time
+  - More aggressive in mid/late game
+  - Uses special attacks strategically
+
+- **Expert AI** (Level 10+, ELO 1300+): "The Terminator", "Code Reaper"
+  - Near-perfect tactical play
+  - Adapts patterns during battle
+  - Uses periodic defensive strategies to counter predictable play
+
+#### AI Character Generation
+- **Stat Scaling**: AI stats are based on your character's stats with ±10% variance for unpredictability
+- **Visual Variety**: Random sprite combinations so each AI opponent looks unique
+- **Level Matching**: AI level is typically ±1 of your character's level
+- **ELO Balancing**: AI ELO rating stays within ±50 points of yours for fair matches
+
+The best part? The AI actually gets better as you do, so you'll always have challenging opponents even when other players aren't available for matches!
+
+### 4. Territory Wars 
 Okay, this is where I got really excited. I created 12 different territories around the city, each with their own vibe:
   - **Downtown** (the good stuff): Casino, Bank, Nightclub District
   - **Industrial** (gritty): Warehouses, Docks, Factory District  
@@ -136,7 +179,7 @@ Okay, this is where I got really excited. I created 12 different territories aro
 
 Once you control a territory, it generates passive income every hour. So you can literally wake up richer! The battles use your character's power level, but there's also strategy involved - some territories are harder to take but worth more money.
 
-### 4. Crime Spree (Because Why Not?)
+### 5. Crime Spree (Because Why Not?)
 We went a bit overboard with the crime system - there are over 20 different jobs you can pull:
   - **Starting Out**: Pickpocketing tourists, robbing corner stores (we all start somewhere)
   - **Getting Serious**: Burglary, drug running, a little extortion
@@ -147,7 +190,7 @@ Each crime costs energy and has a success rate based on your level. Fail a bank 
 
 Energy regenerates over time, so you can't just grind crimes all day (learned that balance lesson the hard way during testing).
 
-### 5. Social Features
+### 6. Social Features
 - **Real-time Chat System** with persistent message history
 - **Friends Management** with request/accept/decline functionality
 - **User Blocking** and privacy controls
@@ -155,7 +198,7 @@ Energy regenerates over time, so you can't just grind crimes all day (learned th
 - **Leaderboards** for top criminals and PvP fighters
 - **Notification System** for game events
 
-### 6. Economic System
+### 7. Economic System
 - **Multi-currency Economy**: Coins and Experience Points
 - **Shop System** for character upgrades and customization
 - **Stat Point Allocation** for character build diversity
