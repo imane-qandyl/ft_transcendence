@@ -153,15 +153,17 @@ const Character = () => {
     <div className="min-h-full p-4 sm:p-6 overflow-auto pb-6">
       {/* Header */}
       <div className="text-center mb-4 sm:mb-6">
-        <h1 className="text-retro-purple text-lg sm:text-xl mb-2">{character.name?.toUpperCase()}</h1>
+        <h1 className="text-retro-purple text-lg sm:text-xl mb-2">⚔️ FIGHTER SELECTION ⚔️</h1>
         <div className="text-pixel-light text-xs sm:text-sm">
-          LV.{character.level} {currentSprite.name?.toUpperCase()}
+          Current: {character.name?.toUpperCase()} (LV.{character.level} {currentSprite.name?.toUpperCase()})
         </div>
       </div>
 
-      {/* Character Display */}
+      {/* Current Fighter */}
       <div className="pixel-card p-3 sm:p-4 mb-4">
-        <div className="flex flex-col sm:flex-row items-center gap-4">{/* Sprite */}
+        <h2 className="text-retro-green text-xs mb-3">-- CURRENT FIGHTER --</h2>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          {/* Sprite */}
           <div className="w-20 h-20 bg-pixel-black border-3 border-pixel-light flex items-center justify-center overflow-hidden shrink-0">
             <div
               className="[image-rendering:pixelated]"
@@ -176,38 +178,34 @@ const Character = () => {
             />
           </div>
 
-          {/* Quick Stats */}
+          {/* Battle Stats */}
           <div className="flex-1 space-y-1">
+            <div className="text-pixel-white font-bold text-sm mb-2">{character.name?.toUpperCase()}</div>
             <div className="flex justify-between text-xs">
-              <span className="text-pixel-light">ELO:</span>
+              <span className="text-pixel-light">BATTLE RATING:</span>
               <span className="text-retro-yellow">{character.elo_rating}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-pixel-light">W/L:</span>
-              <span><span className="text-retro-green">{character.wins}</span>/<span className="text-retro-red">{character.losses}</span></span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-pixel-light">COINS:</span>
-              <span className="text-retro-yellow">{character.coins}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-pixel-light">POINTS:</span>
-              <span className="text-retro-purple">{character.stat_points || 0}</span>
+              <span className="text-pixel-light">RECORD:</span>
+              <span><span className="text-retro-green">{character.wins}W</span>-<span className="text-retro-red">{character.losses}L</span></span>
             </div>
           </div>
         </div>
 
-        {/* XP Bar */}
-        <div className="mt-4">
-          <div className="flex justify-between text-[8px] text-pixel-light mb-1">
-            <span>EXP</span>
-            <span>{character.experience}/{getXPForNextLevel(character.level)}</span>
+        {/* Quick Level Info */}
+        <div className="border-t-2 border-pixel-light pt-3 mt-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-pixel-light">LEVEL {character.level}</span>
+            <span className="text-retro-yellow">{character.coins} COINS</span>
           </div>
-          <div className="h-3 bg-pixel-black border-2 border-pixel-light">
+          <div className="w-full bg-pixel-black border-2 border-pixel-light h-3 relative">
             <div
-              className="h-full bg-retro-yellow"
+              className="h-full bg-retro-green transition-all duration-300"
               style={{ width: `${xpPercent}%` }}
             />
+            <div className="absolute inset-0 flex items-center justify-center text-[8px] text-pixel-white font-bold">
+              {character.experience}/{getXPForNextLevel(character.level)} EXP
+            </div>
           </div>
         </div>
       </div>
@@ -219,12 +217,11 @@ const Character = () => {
         </div>
       )}
 
-      {/* Stats */}
+      {/* Combat Stats */}
       <div className="pixel-card p-4 mb-4">
-        <div className="text-retro-purple text-xs mb-3">-- STATS --</div>
+        <div className="text-retro-purple text-xs mb-3">-- COMBAT STATS --</div>
         <div className="space-y-2">
           {Object.entries(character.baseStats || {}).map(([stat, value]) => {
-            // Format stat names properly
             const statNames = {
               max_health: 'HP',
               attack: 'ATK',
@@ -256,48 +253,69 @@ const Character = () => {
           })}
         </div>
         <div className="text-pixel-mid text-[8px] mt-2 text-center">
-          COST: 100 COINS OR 1 STAT POINT
+          UPGRADE COST: 100 COINS OR 1 STAT POINT
         </div>
       </div>
 
-      {/* Character Selection */}
+      {/* Character Class Selection */}
       <div className="pixel-card p-4 mb-4">
-        <div className="text-retro-purple text-xs mb-3">-- SELECT FIGHTER --</div>
+        <div className="text-retro-purple text-xs mb-3">-- CHANGE FIGHTER CLASS --</div>
         <div className="grid grid-cols-3 gap-3">
-          {CHARACTER_SPRITES.filter(s => !s.locked || character.level >= (s.unlockLevel || 0)).map(sprite => (
-            <button
-              key={sprite.id}
-              onClick={() => selectCharacterSprite(sprite.id)}
-              className={`p-2 border-3 ${
-                (character.customization?.selected_character || character.sprite_body) === sprite.id
-                  ? 'border-retro-purple bg-retro-purple/20'
-                  : 'border-pixel-light bg-pixel-black hover:border-retro-purple'
-              }`}
-            >
-              <div className="w-12 h-12 mx-auto flex items-center justify-center overflow-hidden">
-                <img
-                  src={sprite.sprite}
-                  alt={sprite.name}
-                  className="[image-rendering:pixelated]"
-                  style={{
-                    width: sprite.size === 'large' ? '96px' : '32px',
-                    height: sprite.size === 'large' ? '96px' : '32px',
-                    objectFit: 'none',
-                    objectPosition: '0 0',
-                    transform: sprite.size === 'large' ? 'scale(0.5)' : 'scale(1.5)',
-                  }}
-                />
+          {CHARACTER_SPRITES.map(sprite => {
+            const isUnlocked = character.level >= sprite.unlockLevel;
+            const isCurrentCharacter = (character.customization?.selected_character || character.sprite_body) === sprite.id;
+            
+            return (
+              <button
+                key={sprite.id}
+                onClick={() => isUnlocked && selectCharacterSprite(sprite.id)}
+                disabled={!isUnlocked}
+                className={`p-2 border-3 relative ${
+                  isCurrentCharacter
+                    ? 'border-retro-purple bg-retro-purple/20'
+                    : isUnlocked
+                      ? 'border-pixel-light bg-pixel-black hover:border-retro-purple'
+                      : 'border-gray-600 bg-gray-900 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <div className="w-20 h-20 mx-auto flex items-center justify-center overflow-hidden">
+                  <div
+                    className={`[image-rendering:pixelated] ${!isUnlocked ? 'filter grayscale brightness-50' : ''}`}
+                    style={{
+                      backgroundImage: `url(${sprite.sprite})`,
+                      backgroundSize: sprite.size === 'large' ? '384px 96px' : '128px 32px',
+                      backgroundPosition: '0 0',
+                      backgroundRepeat: 'no-repeat',
+                      width: sprite.size === 'large' ? '96px' : '32px',
+                      height: sprite.size === 'large' ? '96px' : '32px',
+                      transform: sprite.size === 'large' ? 'scale(0.8)' : 'scale(2)',
+                    }}
+                  />
+                  {!isUnlocked && (
+                    <div className="absolute top-1 right-1 text-xs">🔒</div>
+                  )}
+                </div>
+              <div className="text-[8px] mt-1 truncate text-center">
+                <div className={isUnlocked ? 'text-pixel-light' : 'text-gray-500'}>
+                  {sprite.name?.toUpperCase()}
+                </div>
+                {!isUnlocked && (
+                  <div className="text-retro-yellow text-[7px]">LV.{sprite.unlockLevel}</div>
+                )}
+                {isCurrentCharacter && (
+                  <div className="text-retro-green text-[7px]">✓ ACTIVE</div>
+                )}
               </div>
-              <div className="text-[8px] text-pixel-light mt-1 truncate text-center">{sprite.name?.toUpperCase()}</div>
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Character Slots */}
+      {/* Character Management */}
       {allCharacters.length > 0 && (
         <div className="pixel-card p-4 mb-4">
-          <div className="text-retro-purple text-xs mb-3">-- SAVE SLOTS ({slotsInfo.used}/{slotsInfo.max}) --</div>
+          <div className="text-retro-purple text-xs mb-3">-- MY FIGHTERS ({slotsInfo.used}/{slotsInfo.max}) --</div>
           <div className="space-y-2">
             {allCharacters.map(char => (
               <button
@@ -310,8 +328,14 @@ const Character = () => {
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-pixel-white text-xs">{char.name?.toUpperCase()}</span>
-                  <span className="text-pixel-light text-[8px]">LV.{char.level}</span>
+                  <div>
+                    <span className="text-pixel-white text-xs">{char.name?.toUpperCase()}</span>
+                    <span className="text-pixel-light text-[8px] ml-2">({char.class?.toUpperCase() || 'Unknown'})</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-pixel-light text-[8px]">LV.{char.level}</div>
+                    <div className="text-retro-yellow text-[8px]">ELO {char.elo_rating}</div>
+                  </div>
                 </div>
               </button>
             ))}
@@ -320,25 +344,35 @@ const Character = () => {
                 onClick={() => setShowCreateNew(true)}
                 className="w-full p-2 border-3 border-pixel-light bg-pixel-black hover:border-retro-green text-retro-green text-xs"
               >
-                + NEW CHARACTER
+                + CREATE NEW FIGHTER
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Navigation */}
+      {/* Battle Entry */}
       <div className="mt-auto pt-4">
         <button
           onClick={() => navigate('/play')}
-          className="pixel-btn pixel-btn-primary w-full text-sm py-4 hover:shadow-pixel transition-all duration-200"
+          className="pixel-btn pixel-btn-primary w-full text-lg py-6 hover:shadow-pixel transition-all duration-200 mb-4"
         >
-          <div className="flex items-center justify-center space-x-2">
-            <span>⚔️</span>
-            <span>ENTER BATTLE</span>
-            <span>⚔️</span>
+          <div className="flex items-center justify-center space-x-3">
+            <span className="text-xl">⚔️</span>
+            <span className="font-bold">ENTER BATTLE ARENA</span>
+            <span className="text-xl">⚔️</span>
           </div>
+          <div className="text-xs mt-1 opacity-75">Fight other players in ranked matches</div>
         </button>
+        
+        <div className="text-center">
+          <button
+            onClick={() => navigate('/profile')}
+            className="text-pixel-light text-xs hover:text-retro-purple underline"
+          >
+            View Full Profile →
+          </button>
+        </div>
       </div>
     </div>
   );

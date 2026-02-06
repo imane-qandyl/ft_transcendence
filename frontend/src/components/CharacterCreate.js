@@ -13,6 +13,7 @@ const CHARACTER_CLASSES = {
     title: 'The Balanced One',
     sprite: '/assets/sprites/pink_idle.png',
     size: 'small',
+    unlockLevel: 1,
     story: `Born in the mystical Pink Forest, this creature learned to adapt to any situation.
     Neither the strongest nor the tankiest, but masters of consistency.
     They say a Pink Monster has never lost the same fight twice.`,
@@ -34,6 +35,7 @@ const CHARACTER_CLASSES = {
     title: 'The Immovable Tank',
     sprite: '/assets/sprites/owlet_idle.png',
     size: 'small',
+    unlockLevel: 5,
     story: `Ancient guardians of the forest, Owlets have protected their territory for centuries.
     Their thick feathers can withstand any blow. Enemies tire themselves out attacking,
     while the Owlet patiently waits for the perfect counter-strike.`,
@@ -55,6 +57,7 @@ const CHARACTER_CLASSES = {
     title: 'The Aggressive Brawler',
     sprite: '/assets/sprites/dude_idle.png',
     size: 'small',
+    unlockLevel: 10,
     story: `Born to fight, Dudes thrive in the chaos of battle. They hit hard and fast,
     overwhelming opponents before they can react. Not the smartest fighters,
     but their raw aggression is terrifying. "Hit first, hit hard, win fast."`,
@@ -75,8 +78,9 @@ const CHARACTER_CLASSES = {
     name: 'Warrior',
     title: 'The Brutal Force',
     sprite: '/assets/sprites/warrior_idle.png',
-    size: 'small',
-    spriteScale: 5,
+    size: 'large',
+    spriteScale: 1.2,
+    unlockLevel: 15,
     story: `Forged in the fires of countless battles, Warriors live for combat.
     Each swing of their weapon can devastate opponents. They don't need fancy tricks -
     raw power is their answer to everything. "Why dodge when you can destroy?"`,
@@ -97,8 +101,9 @@ const CHARACTER_CLASSES = {
     name: 'Mage',
     title: 'The Critical Master',
     sprite: '/assets/sprites/mage_idle.png',
-    size: 'small',
-    spriteScale: 5,
+    size: 'large',
+    spriteScale: 1.2,
+    unlockLevel: 20,
     story: `Students of the arcane arts, Mages have unlocked the secrets of critical strikes.
     Their attacks may seem weak, but when the stars align, they deal devastating damage.
     "Fortune favors the prepared mind."`,
@@ -119,8 +124,9 @@ const CHARACTER_CLASSES = {
     name: 'Rogue',
     title: 'The Lucky Survivor',
     sprite: '/assets/sprites/rogue_idle.png',
-    size: 'small',
-    spriteScale: 5,
+    size: 'large',
+    spriteScale: 1.2,
+    unlockLevel: 25,
     story: `Shadows are their home, luck is their weapon. Rogues have an uncanny ability
     to survive situations that would kill anyone else. They dodge fatal blows,
     and somehow always come out on top. "Luck? No, it's skill you can't see."`,
@@ -221,7 +227,9 @@ const CharacterCreate = ({ onCharacterCreated }) => {
 
         {/* Character Grid */}
         <div style={styles.characterGrid}>
-          {Object.entries(CHARACTER_CLASSES).map(([key, char]) => (
+          {Object.entries(CHARACTER_CLASSES)
+            .filter(([key, char]) => char.unlockLevel <= 1) // Only show fighters available to new players (level 1)
+            .map(([key, char]) => (
             <div
               key={key}
               onClick={() => handleSelectCharacter(key)}
@@ -235,19 +243,21 @@ const CharacterCreate = ({ onCharacterCreated }) => {
               <div style={{ ...styles.cardHeader, backgroundColor: char.color, borderBottom: '4px solid #4a4a68' }}>
                 <div style={{
                   ...styles.spriteWrapper,
-                  width: '80px',
-                  height: '80px'
+                  width: char.size === 'large' ? '120px' : '80px',
+                  height: char.size === 'large' ? '120px' : '80px'
                 }}>
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
+                      width: char.size === 'large' ? '96px' : '32px',
+                      height: char.size === 'large' ? '96px' : '32px',
                       backgroundImage: `url(${char.sprite})`,
                       backgroundPosition: '0 0',
                       backgroundRepeat: 'no-repeat',
-                      backgroundSize: '128px 32px',
+                      backgroundSize: char.size === 'large' ? '384px 96px' : '128px 32px',
                       imageRendering: 'pixelated',
-                      transform: `scale(${char.spriteScale || 2})`
+                      transform: `scale(${char.spriteScale || 2})`,
+                      border: char.size === 'large' ? '2px solid red' : 'none',
+                      backgroundColor: char.size === 'large' ? 'rgba(255,0,0,0.1)' : 'transparent'
                     }}
                     title={char.name}
                   />
@@ -353,6 +363,40 @@ const CharacterCreate = ({ onCharacterCreated }) => {
             </div>
           )}
         </div>
+
+        {/* Unlock Preview */}
+        <div style={styles.unlockPreview}>
+          <h3 style={styles.unlockTitle}>🔓 UNLOCK MORE FIGHTERS BY LEVELING UP!</h3>
+          <div style={styles.unlockGrid}>
+            {Object.entries(CHARACTER_CLASSES)
+              .filter(([key, char]) => char.unlockLevel > 1)
+              .sort((a, b) => a[1].unlockLevel - b[1].unlockLevel)
+              .map(([key, char]) => (
+              <div key={key} style={{ ...styles.lockedCard, borderColor: char.color }}>
+                <div style={{ ...styles.lockedSpriteWrapper, backgroundColor: char.color + '20' }}>
+                  <div
+                    style={{
+                      width: char.size === 'large' ? '48px' : '24px',
+                      height: char.size === 'large' ? '48px' : '24px',
+                      backgroundImage: `url(${char.sprite})`,
+                      backgroundPosition: '0 0',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: char.size === 'large' ? '192px 48px' : '64px 16px',
+                      imageRendering: 'pixelated',
+                      transform: 'scale(1)',
+                      filter: 'grayscale(100%) brightness(0.5)'
+                    }}
+                  />
+                  <div style={styles.lockIcon}>🔒</div>
+                </div>
+                <div style={styles.lockedName}>{char.name}</div>
+                <div style={{ ...styles.unlockLevel, color: char.color }}>
+                  LEVEL {char.unlockLevel}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -369,12 +413,12 @@ const CharacterCreate = ({ onCharacterCreated }) => {
           <div style={{ ...styles.bigSpriteWrapper, borderColor: selectedClass.color, boxShadow: `0 0 40px ${selectedClass.color}50` }}>
             <div
               style={{
-                width: '32px',
-                height: '32px',
+                width: selectedClass.size === 'large' ? '96px' : '32px',
+                height: selectedClass.size === 'large' ? '96px' : '32px',
                 backgroundImage: `url(${selectedClass.sprite})`,
                 backgroundPosition: '0 0',
                 backgroundRepeat: 'no-repeat',
-                backgroundSize: '128px 32px',
+                backgroundSize: selectedClass.size === 'large' ? '384px 96px' : '128px 32px',
                 imageRendering: 'pixelated',
                 transform: `scale(${(selectedClass.spriteScale || 2) * 1.5})`
               }}
@@ -422,7 +466,7 @@ const CharacterCreate = ({ onCharacterCreated }) => {
         </form>
 
         <div style={styles.reminderBox}>
-          <p>🔒 Remember: You cannot change your character class until Level 20!</p>
+          <p>🔒 Remember: You cannot change your character class until Level 5!</p>
         </div>
       </div>
     </div>
@@ -759,6 +803,72 @@ const styles = {
     fontSize: '8px',
     fontFamily: '"Press Start 2P", monospace',
     boxShadow: '4px 4px 0px #0f0f1b'
+  },
+  // Unlock Preview Styles
+  unlockPreview: {
+    marginTop: '40px',
+    padding: '20px',
+    backgroundColor: '#0f0f1b',
+    border: '3px solid #4a4a68',
+    boxShadow: '4px 4px 0px #000'
+  },
+  unlockTitle: {
+    fontSize: '10px',
+    color: '#00f5d4',
+    textAlign: 'center',
+    marginBottom: '20px',
+    fontFamily: '"Press Start 2P", monospace',
+    textShadow: '2px 2px 0px #000'
+  },
+  unlockGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+    gap: '15px',
+    maxWidth: '600px',
+    margin: '0 auto'
+  },
+  lockedCard: {
+    backgroundColor: '#1a1a2e',
+    border: '2px solid #4a4a68',
+    padding: '15px',
+    textAlign: 'center',
+    position: 'relative',
+    opacity: '0.7'
+  },
+  lockedSpriteWrapper: {
+    width: '60px',
+    height: '60px',
+    margin: '0 auto 10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '2px solid #4a4a68',
+    position: 'relative'
+  },
+  lockIcon: {
+    position: 'absolute',
+    top: '-5px',
+    right: '-5px',
+    fontSize: '12px',
+    background: '#1a1a2e',
+    border: '1px solid #4a4a68',
+    borderRadius: '50%',
+    width: '20px',
+    height: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  lockedName: {
+    fontSize: '8px',
+    color: '#888',
+    marginBottom: '5px',
+    fontFamily: '"Press Start 2P", monospace'
+  },
+  unlockLevel: {
+    fontSize: '7px',
+    fontWeight: 'bold',
+    fontFamily: '"Press Start 2P", monospace'
   }
 };
 

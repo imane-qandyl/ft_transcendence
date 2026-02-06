@@ -7,27 +7,33 @@
 const CHARACTER_CLASSES = {
   pink: {
     stats: { hp: 100, attack: 20, defense: 10, speed: 15, critical: 5, luck: 5 },
-    bonusType: 'balanced'
+    bonusType: 'balanced',
+    unlockLevel: 1
   },
   owlet: {
     stats: { hp: 120, attack: 15, defense: 15, speed: 12, critical: 3, luck: 8 },
-    bonusType: 'tank'
+    bonusType: 'tank',
+    unlockLevel: 5
   },
   dude: {
     stats: { hp: 95, attack: 24, defense: 7, speed: 15, critical: 5, luck: 3 },
-    bonusType: 'brawler'
+    bonusType: 'brawler',
+    unlockLevel: 10
   },
   warrior: {
     stats: { hp: 95, attack: 28, defense: 10, speed: 10, critical: 10, luck: 3 },
-    bonusType: 'attacker'
+    bonusType: 'attacker',
+    unlockLevel: 15
   },
   mage: {
     stats: { hp: 75, attack: 22, defense: 6, speed: 18, critical: 15, luck: 10 },
-    bonusType: 'crit'
+    bonusType: 'crit',
+    unlockLevel: 20
   },
   rogue: {
     stats: { hp: 90, attack: 20, defense: 8, speed: 20, critical: 7, luck: 15 },
-    bonusType: 'lucky'
+    bonusType: 'lucky',
+    unlockLevel: 25
   }
 };
 
@@ -237,6 +243,26 @@ module.exports = async function(fastify, options) {
       const chosenClass = characterClass || sprite_body || 'pink';
       fastify.log.info('[CHARACTER CREATE] Chosen class:', chosenClass);
       const selectedClass = CHARACTER_CLASSES[chosenClass] || CHARACTER_CLASSES.pink;
+      
+      // For new players (first character), only allow classes that unlock at level 1
+      if (existingCharacters.length === 0 && selectedClass.unlockLevel > 1) {
+        return reply.code(400).send({
+          error: `${chosenClass} is locked. New players must start with Pink Monster.`
+        });
+      }
+      
+      // For additional characters, check if player has reached required level
+      if (existingCharacters.length > 0) {
+        const highestLevel = Math.max(...existingCharacters.map(c => c.level));
+        if (selectedClass.unlockLevel > highestLevel) {
+          return reply.code(400).send({
+            error: `${chosenClass} is locked. Reach level ${selectedClass.unlockLevel} to unlock this fighter.`,
+            requiredLevel: selectedClass.unlockLevel,
+            currentLevel: highestLevel
+          });
+        }
+      }
+      
       const stats = selectedClass.stats;
 
       // Calculate next available slot number
