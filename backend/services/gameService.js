@@ -5,12 +5,84 @@
 
 const { v4: uuidv4 } = require('uuid');
 const combatService = require('./combatService');
+const aiOpponentService = require('./aiOpponentService');
 
 class GameService {
   constructor() {
     // Active matches: Map<matchId, matchState>
     this.activeMatches = new Map();
     this.TURN_TIMEOUT = 30000; // 30 seconds per turn
+  }
+
+  /**
+   * Create a new match vs AI opponent
+   * @param {Object} player - Human player data with socket and character
+   * @returns {Object} - Match data with AI opponent
+   */
+  createAIMatch(player) {
+    const matchId = uuidv4();
+
+    // Create AI character based on player's stats and difficulty
+    const aiCharacter = aiOpponentService.createAICharacter(
+      player.character, 
+      player.difficulty
+    );
+    
+    // Create AI player object
+    const aiPlayer = {
+      userId: 'ai',
+      socket: null, // AI doesn't need socket
+      character: aiCharacter,
+      currentHealth: aiCharacter.max_health,
+      maxHealth: aiCharacter.max_health,
+      attack: aiCharacter.attack,
+      defense: aiCharacter.defense,
+      speed: aiCharacter.speed,
+      isDefending: false,
+      totalDamageDealt: 0
+    };
+
+    // Determine who goes first based on speed
+    const firstPlayerId = combatService.determineTurnOrder(
+      player.character,
+      aiCharacter
+    );
+
+    const matchState = {
+      matchId,
+      player1: {
+        userId: player.userId,
+        socket: player.socket,
+        character: player.character,
+        currentHealth: player.character.max_health,
+        maxHealth: player.character.max_health,
+        attack: player.character.attack,
+        defense: player.character.defense,
+        speed: player.character.speed,
+        isDefending: false,
+        totalDamageDealt: 0
+      },
+      player2: aiPlayer,
+      currentTurn: firstPlayerId,
+      turnNumber: 1,
+      turnStartTime: Date.now(),
+      status: 'active',
+      startTime: Date.now(),
+      winner: null,
+      isAIMatch: true
+    };
+
+    this.activeMatches.set(matchId, matchState);
+
+    // Schedule AI turn if AI goes first
+    if (firstPlayerId === aiCharacter.id) {
+      setTimeout(() => this.processAITurnIfNeeded(matchId), 2000);
+    }
+
+    return {
+      matchId,
+      initialState: this.getPublicMatchState(matchState)
+    };
   }
 
   /**
@@ -156,6 +228,15 @@ class GameService {
     match.currentTurn = defender.character.id;
     match.turnNumber++;
     match.turnStartTime = Date.now();
+
+    // Schedule AI turn if it's AI's turn now
+    console.log(`After human action: defender userId=${defender.userId}, defender.character.isAI=${defender.character.isAI}, match is AI match=${match.isAIMatch}`);
+    if (match.isAIMatch && (defender.userId === 'ai' || defender.character.isAI)) {
+      console.log('Scheduling AI response turn');
+      setTimeout(() => this.processAITurnIfNeeded(matchId), 1500);
+    } else {
+      console.log('Not scheduling AI turn - not AI defender or not AI match');
+    }
 
     return {
       ...actionResult,
@@ -334,6 +415,70 @@ class GameService {
       }
     }
     return null;
+  }
+
+  /**
+   * Process AI turn if needed
+   * @param {string} matchId - Match ID
+   */
+  async processAITurnIfNeeded(matchId) {
+    try {
+      console.log(`Processing AI turn for match: ${matchId}`);
+      const match = this.activeMatches.get(matchId);
+      if (!match || match.status !== 'active' || !match.isAIMatch) {
+        console.log(`Match not valid: exists=${!!match}, status=${match?.status}, isAI=${match?.isAIMatch}`);
+        return;
+      }
+
+      // Determine which player is AI - check both userId and isAI flag
+      const aiPlayer = (match.player2.userId === 'ai' || match.player2.character.isAI) ? match.player2 : 
+                      ((match.player1.userId === 'ai' || match.player1.character.isAI) ? match.player1 : null);
+      const humanPlayer = (match.player2.userId === 'ai' || match.player2.character.isAI) ? match.player1 : match.player2;
+
+      console.log(`AI player found: ${!!aiPlayer}, Current turn: ${match.currentTurn}, AI ID: ${aiPlayer?.character.id}`);
+
+      if (!aiPlayer || match.currentTurn !== aiPlayer.character.id) {
+        console.log('Not AI turn or no AI found - skipping');
+        return; // Not AI's turn or no AI found
+      }
+
+      console.log('Making AI decision...');
+      // Make AI decision
+      const action = await aiOpponentService.makeDecision(aiPlayer, humanPlayer, match);
+      console.log(`AI chose action: ${action}`);
+
+      // Process the AI action
+      const result = await this.processAction(matchId, aiPlayer.userId, action);
+      console.log(`AI action processed, finished: ${result.finished}`);
+
+      // Broadcast result to human player - check for valid socket
+      if (humanPlayer && humanPlayer.socket && typeof humanPlayer.socket.emit === 'function') {
+        const updatedMatchState = this.getPublicMatchState(match);
+        
+        // Emit both AI-specific event and general game state update
+        humanPlayer.socket.emit('ai_action', {
+          action,
+          result,
+          aiName: aiPlayer.character.name,
+          matchState: updatedMatchState
+        });
+        
+        // Also emit the standard game state update that the frontend expects
+        humanPlayer.socket.emit('game:state', updatedMatchState);
+        
+        // Emit turn update
+        humanPlayer.socket.emit('game:turn', {
+          isYourTurn: match.currentTurn === humanPlayer.character.id
+        });
+        
+        console.log('AI action and game state broadcasted to human player');
+      } else {
+        console.log('No valid socket found for human player in AI match:', matchId);
+      }
+
+    } catch (error) {
+      console.error('Error processing AI turn:', error);
+    }
   }
 }
 

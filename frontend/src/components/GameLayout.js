@@ -198,13 +198,15 @@ const GameLayout = ({ children }) => {
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto bg-pixel-black relative">
-          <div className="min-h-full pb-16"> {/* Add padding for footer */}
-            {children}
+        <main className="flex-1 flex flex-col bg-pixel-black relative">
+          <div className="flex-1 overflow-auto">
+            <div className="min-h-full">
+              {children}
+            </div>
           </div>
           
-          {/* Footer - Fixed at bottom */}
-          <footer className="absolute bottom-0 left-0 right-0 py-2 text-center border-t-3 border-pixel-mid bg-pixel-black z-30">
+          {/* Footer - Always at bottom of viewport */}
+          <footer className="shrink-0 py-2 text-center border-t-3 border-pixel-mid bg-pixel-black z-30">
             <div className="flex justify-center gap-4 text-xs">
               <Link to="/privacy" className="text-pixel-mid hover:text-retro-purple">
                 Privacy

@@ -77,6 +77,20 @@
     @apply bg-retro-purple border-retro-purple text-pixel-black;
   }
 
+  .pixel-btn-secondary {
+    @apply bg-retro-orange border-retro-orange text-pixel-black;
+  }
+
+  .pixel-btn-danger {
+    @apply bg-retro-red border-retro-red text-pixel-black;
+  }
+
+  .pixel-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none !important;
+    box-shadow: 4px 4px 0px #0f0f1b !important;
+  }
+
   .pixel-card {
     @apply bg-pixel-dark border-3 border-pixel-light p-4;
     box-shadow: 4px 4px 0px #0f0f1b;
@@ -134,12 +148,103 @@
   object-fit: contain;
 }
 
-/* Pixel blink animation */
+/* Enhanced Pixel blink animation with variations */
 @keyframes pixel-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 
+@keyframes pixel-glow {
+  0%, 100% { 
+    box-shadow: 0 0 8px rgba(155, 93, 229, 0.4);
+    border-color: #9b5de5;
+  }
+  50% { 
+    box-shadow: 0 0 16px rgba(155, 93, 229, 0.8);
+    border-color: #f15bb5;
+  }
+}
+
+@keyframes pixel-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 .pixel-blink {
   animation: pixel-blink 1s step-end infinite;
 }
+
+.pixel-glow {
+  animation: pixel-glow 2s ease-in-out infinite;
+}
+
+.pixel-pulse {
+  animation: pixel-pulse 2s ease-in-out infinite;
+}
+
+.shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Enhanced visual effects */
+.status-indicator {
+  position: relative;
+  display: inline-block;
+}
+
+.status-indicator::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: pixel-pulse 2s ease-in-out infinite;
+}
+
+.status-online::after {
+  background: radial-gradient(circle, transparent 40%, rgba(0, 245, 212, 0.3) 100%);
+}
+
+/* Enhanced card variations */
+.pixel-card-gradient {
+  @apply pixel-card;
+  background: linear-gradient(135deg, 
+    rgba(45, 45, 68, 0.9) 0%, 
+    rgba(26, 26, 46, 0.9) 50%, 
+    rgba(45, 45, 68, 0.9) 100%);
+}
+
+.pixel-card-glow {
+  @apply pixel-card;
+  box-shadow: 
+    4px 4px 0px #0f0f1b,
+    0 0 20px rgba(155, 93, 229, 0.2);
+}
+
+/* Progress bar enhancements */
+.pixel-progress {
+  @apply bg-pixel-black border-2 border-pixel-light p-1;
+}
+
+.pixel-progress-fill {
+  height: 8px;
+  background: linear-gradient(90deg, 
+    #9b5de5 0%, 
+    #f15bb5 50%, 
+    #9b5de5 100%);
+  transition: width 0.3s ease;
+}
+
+/* Difficulty indicators */
+.difficulty-easy { @apply text-retro-green; }
+.difficulty-medium { @apply text-retro-yellow; }
+.difficulty-hard { @apply text-retro-orange; }
+.difficulty-expert { @apply text-retro-red; }

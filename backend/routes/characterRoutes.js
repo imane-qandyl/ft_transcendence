@@ -785,7 +785,7 @@ module.exports = async function(fastify, options) {
     const { selectedCharacter } = request.body;
 
     const VALID_SPRITES = ['pink', 'owlet', 'dude', 'warrior', 'mage', 'rogue'];
-    const UNLOCK_LEVEL = 20; // Level required to change character
+    const UNLOCK_LEVEL = 5; // Level required to change character
 
     try {
       if (!VALID_SPRITES.includes(selectedCharacter)) {

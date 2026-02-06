@@ -138,6 +138,85 @@ class GameSocketHandler {
   }
 
   /**
+   * Handle AI match request
+   */
+  async handleJoinAIMatch(socket, data) {
+    try {
+      const userId = socket.user.id;
+
+      // Get user's character from database
+      let character = await knex('characters')
+        .where('characters.user_id', userId)
+        .select('characters.*')
+        .first();
+
+      // Auto-create character if it doesn't exist
+      if (!character) {
+        const user = await knex('users').where('id', userId).first();
+        const username = user?.username || `Player${userId}`;
+        
+        await knex('characters').insert({
+          user_id: userId,
+          name: username,
+          level: 1,
+          experience: 0,
+          coins: 1000,
+          max_health: 100,
+          attack: 20,
+          defense: 10,
+          speed: 15,
+          critical: 10,
+          luck: 5,
+          stat_points: 0,
+          elo_rating: 1000,
+          wins: 0,
+          losses: 0,
+          sprite_body: 'body_base',
+          sprite_hair: 'hair_short',
+          sprite_face: 'face_normal',
+          created_at: new Date(),
+          updated_at: new Date()
+        });
+
+        // Fetch the newly created character
+        character = await knex('characters')
+          .where('characters.user_id', userId)
+          .select('characters.*')
+          .first();
+      }
+
+      // Create AI match immediately with difficulty
+      const match = gameService.createAIMatch({
+        userId,
+        socket,
+        character,
+        difficulty: data.difficulty || 'medium' // Default to medium difficulty
+      });
+
+      // Join player to match room
+      socket.join(match.matchId);
+
+      // Notify player that AI match started
+      socket.emit('game:start', {
+        matchId: match.matchId,
+        initialState: match.initialState,
+        myCharacterId: character.id,
+        myUserId: userId,
+        isYourTurn: match.initialState.currentTurn === character.id,
+        opponent: {
+          username: match.initialState.player2.username,
+          level: match.initialState.player2.level,
+          isAI: true
+        }
+      });
+
+    } catch (error) {
+      console.error('Error creating AI match:', error);
+      socket.emit('ai:error', { message: 'Failed to create AI match' });
+    }
+  }
+
+  /**
    * Handle game action (attack, defend, special)
    */
   async handleGameAction(socket, data) {
@@ -183,12 +262,17 @@ class GameSocketHandler {
         // Notify whose turn it is
         const match = gameService.getMatch(matchId);
         if (match) {
-          match.player1.socket.emit('game:turn', {
-            isYourTurn: match.currentTurn === match.player1.character.id
-          });
-          match.player2.socket.emit('game:turn', {
-            isYourTurn: match.currentTurn === match.player2.character.id
-          });
+          // Only emit to sockets that exist (human players)
+          if (match.player1.socket && typeof match.player1.socket.emit === 'function') {
+            match.player1.socket.emit('game:turn', {
+              isYourTurn: match.currentTurn === match.player1.character.id
+            });
+          }
+          if (match.player2.socket && typeof match.player2.socket.emit === 'function') {
+            match.player2.socket.emit('game:turn', {
+              isYourTurn: match.currentTurn === match.player2.character.id
+            });
+          }
         }
       }
 
@@ -221,59 +305,96 @@ class GameSocketHandler {
    */
   async handleMatchEnd(matchId, matchResult) {
     try {
-      // Save match to database (use game_matches table which has the right columns)
-      const [match] = await knex('game_matches').insert({
-        player1_id: matchResult.winnerCharacterId,
-        player2_id: matchResult.loserCharacterId,
-        winner_id: matchResult.winnerCharacterId,
-        match_type: 'ranked',
-        duration_seconds: matchResult.duration,
-        player1_damage_dealt: matchResult.player1DamageDealt,
-        player2_damage_dealt: matchResult.player2DamageDealt,
-        player1_elo_change: matchResult.rewards.eloChange,
-        player2_elo_change: matchResult.loserEloChange,
-        winner_xp: matchResult.rewards.xp,
-        winner_coins: matchResult.rewards.coins
-      }).returning('*');
+      // Check if this was an AI match by looking at user IDs
+      const isAIMatch = matchResult.winnerId === 'ai' || matchResult.loserId === 'ai';
+      
+      if (!isAIMatch) {
+        // Only save real player vs player matches to database
+        const [match] = await knex('game_matches').insert({
+          player1_id: matchResult.winnerCharacterId,
+          player2_id: matchResult.loserCharacterId,
+          winner_id: matchResult.winnerCharacterId,
+          match_type: 'ranked',
+          duration_seconds: matchResult.duration,
+          player1_damage_dealt: matchResult.player1DamageDealt,
+          player2_damage_dealt: matchResult.player2DamageDealt,
+          player1_elo_change: matchResult.rewards.eloChange,
+          player2_elo_change: matchResult.loserEloChange,
+          winner_xp: matchResult.rewards.xp,
+          winner_coins: matchResult.rewards.coins
+        }).returning('*');
 
-      // Update winner's character
-      await knex('characters')
-        .where('id', matchResult.winnerCharacterId)
-        .increment({
-          wins: 1,
-          experience: matchResult.rewards.xp,
-          coins: matchResult.rewards.coins,
-          elo_rating: matchResult.rewards.eloChange
-        });
-
-      // Update loser's character
-      await knex('characters')
-        .where('id', matchResult.loserCharacterId)
-        .increment({
-          losses: 1,
-          elo_rating: matchResult.loserEloChange
-        });
-
-      // Check for level up
-      const winner = await knex('characters')
-        .where('id', matchResult.winnerCharacterId)
-        .first();
-
-      const combatService = require('../services/combatService');
-      const levelUp = combatService.checkLevelUp(winner);
-
-      if (levelUp) {
+        // Update winner's character
         await knex('characters')
           .where('id', matchResult.winnerCharacterId)
-          .update({
-            level: levelUp.newLevel,
-            experience: levelUp.remainingXP,
-            max_health: knex.raw('max_health + ?', [levelUp.statIncrease.max_health]),
-            attack: knex.raw('attack + ?', [levelUp.statIncrease.attack]),
-            defense: knex.raw('defense + ?', [levelUp.statIncrease.defense]),
-            speed: knex.raw('speed + ?', [levelUp.statIncrease.speed]),
-            stat_points: knex.raw('COALESCE(stat_points, 0) + ?', [levelUp.statPointsGranted || 3]) // Grant 3 stat points
+          .increment({
+            wins: 1,
+            experience: matchResult.rewards.xp,
+            coins: matchResult.rewards.coins,
+            elo_rating: matchResult.rewards.eloChange
           });
+
+        // Update loser's character
+        await knex('characters')
+          .where('id', matchResult.loserCharacterId)
+          .increment({
+            losses: 1,
+            elo_rating: matchResult.loserEloChange
+          });
+      } else {
+        // For AI matches, only update the human player's stats
+        const humanUserId = matchResult.winnerId !== 'ai' ? matchResult.winnerId : matchResult.loserId;
+        const humanCharacterId = matchResult.winnerId !== 'ai' ? matchResult.winnerCharacterId : matchResult.loserCharacterId;
+        const isHumanWinner = matchResult.winnerId !== 'ai';
+        
+        if (isHumanWinner) {
+          // Human won against AI
+          await knex('characters')
+            .where('id', humanCharacterId)
+            .increment({
+              wins: 1,
+              experience: matchResult.rewards.xp,
+              coins: matchResult.rewards.coins,
+              elo_rating: matchResult.rewards.eloChange
+            });
+        } else {
+          // Human lost to AI
+          await knex('characters')
+            .where('id', humanCharacterId)
+            .increment({
+              losses: 1,
+              elo_rating: matchResult.loserEloChange
+            });
+        }
+        
+        console.log(`AI match completed: Human ${isHumanWinner ? 'won' : 'lost'} against AI`);
+      }
+
+      // Check for level up (only for the winner if not AI)
+      const winnerCharacterId = matchResult.winnerId !== 'ai' ? matchResult.winnerCharacterId : null;
+      let levelUp = null;
+      
+      if (winnerCharacterId) {
+        const winner = await knex('characters')
+          .where('id', winnerCharacterId)
+          .first();
+
+        const combatService = require('../services/combatService');
+        levelUp = combatService.checkLevelUp(winner);
+
+        if (levelUp) {
+          await knex('characters')
+            .where('id', winnerCharacterId)
+            .update({
+              level: levelUp.newLevel,
+              experience: levelUp.remainingXP,
+              max_health: knex.raw('max_health + ?', [levelUp.statIncrease.max_health]),
+              attack: knex.raw('attack + ?', [levelUp.statIncrease.attack]),
+              defense: knex.raw('defense + ?', [levelUp.statIncrease.defense]),
+              speed: knex.raw('speed + ?', [levelUp.statIncrease.speed]),
+              stat_points: knex.raw('COALESCE(stat_points, 0) + ?', [levelUp.statPointsGranted || 3]) // Grant 3 stat points
+            });
+        }
       }
 
       // Notify both players of match end
@@ -337,6 +458,7 @@ class GameSocketHandler {
       this.handleJoinQueue(socket, data);
     });
     socket.on('matchmaking:leave', () => this.handleLeaveQueue(socket));
+    socket.on('matchmaking:ai', (data) => this.handleJoinAIMatch(socket, data));
 
     // Game events
     socket.on('game:action', (data) => this.handleGameAction(socket, data));

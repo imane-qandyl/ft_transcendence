@@ -94,13 +94,18 @@ const Character = () => {
       }));
       setMessage(`SELECTED ${spriteId.toUpperCase()}!`);
     } catch (err) {
-      setMessage(err.response?.data?.error || 'SELECTION FAILED');
+      if (err.response?.status === 403 && err.response?.data?.requiredLevel) {
+        const { currentLevel, requiredLevel } = err.response.data;
+        setMessage(`LEVEL ${requiredLevel} REQUIRED! CURRENT: ${currentLevel}`);
+      } else {
+        setMessage(err.response?.data?.error || 'SELECTION FAILED');
+      }
     }
   };
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-retro-purple text-xs pixel-blink">LOADING...</div>
       </div>
     );
@@ -109,7 +114,7 @@ const Character = () => {
   // Show create new character screen
   if (showCreateNew) {
     return (
-      <div className="h-full p-4 overflow-auto">
+      <div className="min-h-full p-4 overflow-auto">
         <button
           onClick={() => setShowCreateNew(false)}
           className="pixel-btn text-xs mb-4"
@@ -126,7 +131,7 @@ const Character = () => {
 
   if (!character) {
     return (
-      <div className="h-full p-4 overflow-auto">
+      <div className="min-h-full p-4 overflow-auto">
         <CharacterCreate
           onCharacterCreated={data => {
             setCharacter(data.character);
@@ -145,7 +150,7 @@ const Character = () => {
   const xpPercent = Math.min(100, (character.experience / getXPForNextLevel(character.level)) * 100);
 
   return (
-    <div className="h-full p-4 sm:p-6 overflow-auto">
+    <div className="min-h-full p-4 sm:p-6 overflow-auto pb-6">
       {/* Header */}
       <div className="text-center mb-4 sm:mb-6">
         <h1 className="text-retro-purple text-lg sm:text-xl mb-2">{character.name?.toUpperCase()}</h1>
@@ -323,12 +328,16 @@ const Character = () => {
       )}
 
       {/* Navigation */}
-      <div className="flex gap-2">
+      <div className="mt-auto pt-4">
         <button
           onClick={() => navigate('/play')}
-          className="pixel-btn pixel-btn-primary flex-1 text-xs"
+          className="pixel-btn pixel-btn-primary w-full text-sm py-4 hover:shadow-pixel transition-all duration-200"
         >
-          {'>'} PLAY {'<'}
+          <div className="flex items-center justify-center space-x-2">
+            <span>⚔️</span>
+            <span>ENTER BATTLE</span>
+            <span>⚔️</span>
+          </div>
         </button>
       </div>
     </div>
