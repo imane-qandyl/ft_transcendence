@@ -1,8 +1,6 @@
 # ft_transcendence - Street Pixel Wars
 
-Hey there! 👋 Welcome to our **Street Pixel Wars** project - a gangster-themed PvP combat game that we built from scratch. Think old-school pixel art meets modern web tech, with a dash of organized crime flavor!
-
-This was our take on the famous 42 School ft_transcendence project, and honestly, we got a bit carried away with the features... 😅
+Hey there!  Welcome to our **Street Pixel Wars** project - a gangster-themed PvP combat game that we built from scratch. Think old-school pixel art meets modern web tech, with a dash of organized crime flavor!
 
 ![Project Status](https://img.shields.io/badge/status-completed-success)
 ![Tech Stack](https://img.shields.io/badge/stack-Node.js%20|%20React%20|%20Phaser3-blue)
