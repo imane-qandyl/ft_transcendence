@@ -99,6 +99,14 @@
   .pixel-input:focus {
     @apply outline-none border-retro-purple;
   }
+  
+  .flex-shrink-0 {
+    flex-shrink: 0;
+  }
+  
+  .w-full {
+    width: 100%;
+  }
 }
 
 /* Game container styles */

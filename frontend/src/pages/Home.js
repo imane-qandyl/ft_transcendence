@@ -25,9 +25,6 @@ const Home = () => {
           <p className="text-pixel-light text-xs sm:text-sm mb-2">
             * TURN-BASED COMBAT *
           </p>
-          <p className="text-pixel-light text-xs sm:text-sm">
-            * PIXEL GRAPHICS * LAN PLAY *
-          </p>
         </div>
 
         {/* Menu Box */}
@@ -82,11 +79,8 @@ const Home = () => {
 
       {/* Footer */}
       <footer className="py-4 text-center border-t-3 border-pixel-mid">
-        <p className="text-pixel-light text-xs">
-          FT_TRANSCENDENCE // 42 PROJECT
-        </p>
         <p className="text-pixel-mid text-xs mt-1">
-          PRESS START
+          &copy; 2026 STREET PIXEL WARS. ALL RIGHTS RESERVED.
         </p>
       </footer>
     </div>

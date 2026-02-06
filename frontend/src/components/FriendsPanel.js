@@ -54,7 +54,6 @@ const FriendsPanel = ({ onClose }) => {
       
       // Use flushSync to force immediate rendering of loading state
       flushSync(() => {
-        console.log('  → Setting messagesLoading to TRUE');
         setMessagesLoading(true);
         setMessages([]);
       });
@@ -122,33 +121,26 @@ const FriendsPanel = ({ onClose }) => {
 
   const fetchMessages = async (friendId) => {
     try {
-      console.log('fetchMessages for friendId:', friendId);
-      
       try {
         // Get chat between current user and friend
         const response = await api.get(`/api/v1/chats/between/${friendId}`);
-        console.log('Chat response:', response.data);
         
         // Response format: { success: true, chat_id: 1 }
         const chatId = response.data.chat_id || response.data.chat?.id;
         
         if (chatId) {
-          console.log('Got chatId:', chatId);
           setCurrentChatId(chatId);
           
           // Mark messages as read immediately
           try {
             await api.put(`/api/v1/chats/${chatId}/read`, {});
-            console.log('Marked messages as read');
           } catch (readErr) {
-            console.error('Failed to mark messages as read:', readErr);
+            // Failed to mark messages as read - continue silently
           }
           
           // Fetch messages immediately
           const messagesResponse = await api.get(`/api/v1/chats/${chatId}/messages`);
-          console.log('Messages response:', messagesResponse.data);
           const msgs = messagesResponse.data.data || messagesResponse.data.messages || [];
-          console.log('Messages with flags:', msgs.map(m => ({ id: m.id, sender_id: m.sender_id, is_own_message: m.is_own_message, content: m.content })));
           
           // Only update if we have messages, don't clear if empty
           if (msgs && msgs.length > 0) {
@@ -159,7 +151,6 @@ const FriendsPanel = ({ onClose }) => {
           }
           // If we have existing messages but fetch returns empty, keep existing messages
           
-          console.log('  → Setting messagesLoading to FALSE');
           setMessagesLoading(false);
           
           // Clear unread count for this friend
@@ -172,22 +163,20 @@ const FriendsPanel = ({ onClose }) => {
           // FriendsPanel should not continuously poll. This was causing excessive API calls.
           // Real-time message updates are handled by the dedicated Chat page with WebSocket support.
         } else {
-          console.log('No chatId in response, no messages to load yet');
+          // No chatId in response, no messages to load yet
           // Only clear if this is the first time
           if (messages.length > 0) {
             setMessages([]);
           }
-          console.log('  → Setting messagesLoading to FALSE (no chat)');
           setMessagesLoading(false);
         }
       } catch (err) {
         if (err.response?.status === 404) {
-          console.log('📝 No chat exists yet with this friend. Messages will be loaded after first message is sent.');
+          // No chat exists yet with this friend. Messages will be loaded after first message is sent.
           // Only clear on 404 if we had no previous messages
           if (messages.length === 0) {
             setMessages([]);
           }
-          console.log('  → Setting messagesLoading to FALSE (404)');
           setMessagesLoading(false);
         } else {
           throw err;
@@ -195,75 +184,53 @@ const FriendsPanel = ({ onClose }) => {
       }
     } catch (err) {
       console.error('Failed to fetch messages:', err);
-      console.error('Error details:', err.response?.data);
       // Only clear messages on actual errors, not on network timeouts or retries
       // Don't set loading to false if there was an error during polling
       if (messagesLoading) {
         setMessages([]);
-        console.log('  → Setting messagesLoading to FALSE (error)');
         setMessagesLoading(false);
       }
     }
   };
 
   const sendMessage = async (e) => {
-    console.log('sendMessage called with event:', e);
-    
     if (e && e.preventDefault) {
       e.preventDefault();
     }
     
-    console.log('Checking conditions:', {
-      newMessage: newMessage,
-      newMessageTrimmed: newMessage.trim(),
-      hasNewMessage: newMessage.trim().length > 0,
-      selectedFriend: selectedFriend,
-      hasSelectedFriend: !!selectedFriend
-    });
-
     if (!newMessage.trim()) {
-      console.warn('Message is empty, not sending');
       return;
     }
 
     if (!selectedFriend) {
-      console.warn('No friend selected, not sending');
       return;
     }
 
     try {
-      console.log('Getting chat for friend:', selectedFriend);
       
       // Backend returns userId, not id
       const friendId = selectedFriend.userId || selectedFriend.id;
-      console.log('Using friendId:', friendId);
       
       let chatId = null;
       
       try {
         // Try to get existing chat
         const chatResponse = await api.get(`/api/v1/chats/between/${friendId}`);
-        console.log('Chat response:', chatResponse.data);
         
         // Response format: { success: true, chat_id: 1 }
         chatId = chatResponse.data.chat_id || chatResponse.data.chat?.id;
       } catch (err) {
         // If chat doesn't exist (404), create one
         if (err.response?.status === 404) {
-          console.log('❌ Chat does not exist, creating new chat with friend:', friendId);
           try {
             const createResponse = await api.post('/api/v1/chats/', { user2_id: friendId });
-            console.log('Chat created:', createResponse.data);
             chatId = createResponse.data.chat_id || createResponse.data.chat?.id;
             
             if (!chatId) {
-              console.error('No chat ID returned from create:', createResponse.data);
               alert('Failed to create chat. Please try again.');
               return;
             }
-            console.log('✓ New chat created with ID:', chatId);
           } catch (createErr) {
-            console.error('Failed to create chat:', createErr);
             alert('Failed to create chat: ' + (createErr.response?.data?.message || createErr.message));
             return;
           }
@@ -273,25 +240,18 @@ const FriendsPanel = ({ onClose }) => {
       }
       
       if (!chatId) {
-        console.error('No chat ID obtained');
         alert('Failed to get chat. Please try again.');
         return;
       }
       
-      console.log('Chat ID:', chatId);
-      
       // Send message to the chat
-      console.log('Sending message:', { chatId, content: newMessage });
       const sendResponse = await api.post(`/api/v1/chats/${chatId}/messages`, { content: newMessage });
-      console.log('Message sent response:', sendResponse.data);
       
       // Refresh messages from server immediately after sending
       try {
         const refreshedMessages = await api.get(`/api/v1/chats/${chatId}/messages`);
-        console.log('Refreshed messages:', refreshedMessages.data);
         setMessages(refreshedMessages.data.data || refreshedMessages.data.messages || []);
       } catch (refreshErr) {
-        console.error('Failed to refresh messages after send:', refreshErr);
         // Fallback: add message to local state
         const newMsg = {
           id: Date.now(),
@@ -303,14 +263,10 @@ const FriendsPanel = ({ onClose }) => {
         setMessages(prev => [...prev, newMsg]);
       }
       
-      console.log('Clearing input');
       setNewMessage('');
       
-      console.log('✓ Message sent successfully!');
     } catch (err) {
       console.error('Failed to send message:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Error message:', err.message);
       alert('Failed to send message: ' + (err.response?.data?.message || err.message));
     }
   };
@@ -382,7 +338,6 @@ const FriendsPanel = ({ onClose }) => {
       // Refresh all data
       await fetchBlockedUsers();
       
-      console.log('Friend blocked successfully');
     } catch (err) {
       console.error('Failed to block friend:', err);
       alert('Failed to block friend: ' + (err.response?.data?.message || err.message));
@@ -402,7 +357,6 @@ const FriendsPanel = ({ onClose }) => {
       // Refresh friends list in case they should appear there
       await fetchFriends();
       
-      console.log('Friend unblocked successfully');
     } catch (err) {
       console.error('Failed to unblock friend:', err);
       alert('Failed to unblock friend: ' + (err.response?.data?.message || err.message));
@@ -472,29 +426,24 @@ const FriendsPanel = ({ onClose }) => {
               type="text"
               value={newMessage}
               onChange={(e) => {
-                console.log('Input changed:', e.target.value);
                 setNewMessage(e.target.value);
               }}
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  console.log('Enter key pressed');
                   sendMessage();
                 }
               }}
               placeholder="TYPE..."
-              className="pixel-input flex-1 text-[8px]"
-              style={{width: '100%'}}
+              className="pixel-input flex-1 text-[8px] w-full"
             />
             <button
               type="button"
               onClick={(e) => {
-                console.log('Button clicked!');
                 e.preventDefault();
                 sendMessage();
               }}
-              className="px-2 bg-retro-purple border-3 border-retro-purple text-pixel-black text-xs hover:cursor-pointer"
-              style={{ cursor: 'pointer', flexShrink: 0 }}
+              className="px-2 bg-retro-purple border-3 border-retro-purple text-pixel-black text-xs hover:cursor-pointer flex-shrink-0"
             >
               &gt;
             </button>
@@ -605,12 +554,108 @@ const FriendsPanel = ({ onClose }) => {
               </div>
             )}
 
-            {/* Other tabs would go here - keeping it simple for now */}
+            {/* Other tabs - Add Friends */}
             {activeTab === 'add' && (
               <div className="p-4">
-                <div className="text-center text-pixel-mid text-sm py-4">
-                  ADD FRIENDS FEATURE
+                <form onSubmit={(e) => { e.preventDefault(); searchUsers(searchQuery); }} className="flex gap-2 mb-4">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="ENTER USERNAME..."
+                    className="pixel-input text-sm flex-1"
+                  />
+                  <button
+                    type="submit"
+                    disabled={searchLoading}
+                    className="px-4 py-2 bg-retro-purple border-3 border-retro-purple text-pixel-black text-sm disabled:opacity-50"
+                  >
+                    {searchLoading ? '...' : 'SEARCH'}
+                  </button>
+                </form>
+
+                {searchQuery && !searchLoading && searchResults.length === 0 && (
+                  <div className="text-pixel-mid text-sm text-center py-4">
+                    NO USERS FOUND
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {searchResults.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-3 border-3 border-pixel-mid bg-pixel-mid">
+                      <span className="text-pixel-white text-sm truncate">
+                        {user.username?.toUpperCase()}
+                      </span>
+                      <button
+                        onClick={() => sendFriendRequest(user.id)}
+                        className="px-3 py-1 bg-retro-purple border-3 border-retro-purple text-pixel-black text-sm"
+                      >
+                        ADD
+                      </button>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            )}
+
+            {/* Other tabs - Requests */}
+            {activeTab === 'requests' && (
+              <div className="p-4 space-y-2">
+                {friendRequests.length === 0 ? (
+                  <div className="text-center text-pixel-mid text-sm py-4">
+                    NO PENDING REQUESTS
+                  </div>
+                ) : (
+                  friendRequests.map((req) => (
+                    <div key={req.friendshipId} className="p-3 border-3 border-pixel-mid bg-pixel-mid">
+                      <div className="text-pixel-white text-sm mb-3">
+                        {req.senderUsername?.toUpperCase() || req.username?.toUpperCase() || '???'}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => acceptRequest(req.friendshipId)}
+                          className="flex-1 py-2 bg-retro-green border-3 border-retro-green text-pixel-black text-sm"
+                        >
+                          ACCEPT
+                        </button>
+                        <button
+                          onClick={() => declineRequest(req.friendshipId)}
+                          className="flex-1 py-2 bg-pixel-mid border-3 border-pixel-light text-pixel-light text-sm"
+                        >
+                          DECLINE
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Other tabs - Blocked */}
+            {activeTab === 'blocked' && (
+              <div className="p-4">
+                {blockedUsers.length === 0 ? (
+                  <div className="text-center text-pixel-mid text-sm py-4">
+                    NO BLOCKED USERS
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {blockedUsers.map((blockedUser) => (
+                      <div key={blockedUser.userId} className="flex items-center justify-between p-3 border-3 border-retro-yellow bg-pixel-light">
+                        <span className="text-pixel-black text-sm truncate font-bold">
+                          {blockedUser.username?.toUpperCase()}
+                        </span>
+                        <button
+                          onClick={() => unblockFriend(blockedUser.userId)}
+                          className="px-3 py-1 bg-retro-green border-3 border-retro-green text-pixel-black text-sm"
+                          title="Unblock user"
+                        >
+                          UNBLOCK
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -618,7 +663,7 @@ const FriendsPanel = ({ onClose }) => {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 bg-pixel-dark border-l-3 border-pixel-mid flex-col shrink-0">
+      <div className="hidden md:flex w-64 bg-pixel-dark border-l-3 border-pixel-mid flex-col shrink-0 h-full">
         {/* Header */}
         <div className="h-10 px-3 flex items-center justify-between border-b-3 border-pixel-mid">
           <span className="text-retro-purple text-xs">SOCIAL</span>
@@ -651,7 +696,7 @@ const FriendsPanel = ({ onClose }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         {/* Friends Tab */}
         {activeTab === 'friends' && (
           <div className="p-2">
