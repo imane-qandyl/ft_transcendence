@@ -122,6 +122,15 @@ const Login = () => {
               NEW GAME
             </Link>
           </p>
+          <div className="flex justify-center gap-4 text-xs mb-2">
+            <Link to="/privacy" className="text-pixel-mid hover:text-retro-purple">
+              Privacy
+            </Link>
+            <span className="text-pixel-mid">|</span>
+            <Link to="/terms" className="text-pixel-mid hover:text-retro-purple">
+              Terms
+            </Link>
+          </div>
           <Link to="/" className="text-pixel-mid text-xs block hover:text-pixel-light">
             {'<'} BACK
           </Link>

@@ -199,12 +199,27 @@ const GameLayout = ({ children }) => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto bg-pixel-black relative">
-          {children}
+          <div className="min-h-full pb-16"> {/* Add padding for footer */}
+            {children}
+          </div>
+          
+          {/* Footer - Fixed at bottom */}
+          <footer className="absolute bottom-0 left-0 right-0 py-2 text-center border-t-3 border-pixel-mid bg-pixel-black z-30">
+            <div className="flex justify-center gap-4 text-xs">
+              <Link to="/privacy" className="text-pixel-mid hover:text-retro-purple">
+                Privacy
+              </Link>
+              <span className="text-pixel-mid">|</span>
+              <Link to="/terms" className="text-pixel-mid hover:text-retro-purple">
+                Terms
+              </Link>
+            </div>
+          </footer>
           
           {/* Mobile Friends Button */}
           <button
             onClick={() => setShowFriends(true)}
-            className="md:hidden fixed bottom-4 right-4 z-40 w-12 h-12 bg-retro-purple border-3 border-pixel-light text-pixel-black text-sm hover:bg-retro-pink"
+            className="md:hidden fixed bottom-20 right-4 z-40 w-12 h-12 bg-retro-purple border-3 border-pixel-light text-pixel-black text-sm hover:bg-retro-pink"
             style={{ boxShadow: '4px 4px 0px #0f0f1b' }}
           >
             [+]

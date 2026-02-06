@@ -79,6 +79,15 @@ const Home = () => {
 
       {/* Footer */}
       <footer className="py-4 text-center border-t-3 border-pixel-mid">
+        <div className="flex justify-center gap-4 text-xs mb-2">
+          <Link to="/privacy" className="text-pixel-mid hover:text-retro-purple">
+            Privacy Policy
+          </Link>
+          <span className="text-pixel-mid">|</span>
+          <Link to="/terms" className="text-pixel-mid hover:text-retro-purple">
+            Terms of Service
+          </Link>
+        </div>
         <p className="text-pixel-mid text-xs mt-1">
           &copy; 2026 STREET PIXEL WARS. ALL RIGHTS RESERVED.
         </p>

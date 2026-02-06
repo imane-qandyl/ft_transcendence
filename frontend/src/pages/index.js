@@ -16,3 +16,5 @@ export { default as Notifications } from './Notifications';
 export { default as Character } from './Character';
 export { default as Settings } from './Settings';
 export { default as Shop } from './Shop';
+export { default as PrivacyPolicy } from './PrivacyPolicy';
+export { default as TermsOfService } from './TermsOfService';
