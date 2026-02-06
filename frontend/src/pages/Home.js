@@ -10,30 +10,30 @@ const Home = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         {/* Pixel Art Title */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 sm:mb-12">
           {/* Sword Icon */}
-          <div className="text-6xl mb-6">
+          <div className="text-4xl sm:text-5xl md:text-6xl mb-4 sm:mb-6">
             [=====&gt;
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl text-retro-purple mb-4 tracking-wide">
+          <h1 className="text-xl sm:text-2xl text-retro-purple mb-3 sm:mb-4 tracking-wide px-4">
             STREET PIXEL WARS
           </h1>
 
           {/* Subtitle */}
-          <p className="text-pixel-light text-xs mb-2">
+          <p className="text-pixel-light text-xs sm:text-sm mb-2">
             * TURN-BASED COMBAT *
           </p>
-          <p className="text-pixel-light text-xs">
+          <p className="text-pixel-light text-xs sm:text-sm">
             * PIXEL GRAPHICS * LAN PLAY *
           </p>
         </div>
 
         {/* Menu Box */}
-        <div className="pixel-card w-full max-w-md">
+        <div className="pixel-card w-full max-w-sm mx-4 sm:max-w-md">
           {/* Decorative top border */}
-          <div className="text-center text-pixel-light mb-6 text-xs">
+          <div className="text-center text-pixel-light mb-4 sm:mb-6 text-xs">
             +-----------------------+
           </div>
 

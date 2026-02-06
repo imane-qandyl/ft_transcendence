@@ -19,10 +19,9 @@ up:
 	docker compose up -d backend frontend
 	@echo ""
 	@echo "============================================"
-	@echo "ft_transcendence is running!"
+	@echo "Welcome to ft_transcendence!"
 	@echo "============================================"
 	@echo "Access the application at: https://localhost:8443"
-	@echo ""
 	@echo "============================================"
 
 # Start in foreground (with logs)

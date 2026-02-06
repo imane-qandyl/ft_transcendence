@@ -17,14 +17,21 @@
   html, body, #root {
     height: 100%;
     overflow: hidden;
+    overflow-y: auto;
   }
 
   body {
     background-color: #0f0f1b;
     color: #c8c8d4;
     font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.8;
+  }
+
+  @media (max-width: 640px) {
+    body {
+      font-size: 10px;
+    }
   }
 
   /* Pixel-style scrollbar */
@@ -51,6 +58,9 @@
     @apply px-4 py-3 bg-pixel-mid border-3 border-pixel-light text-pixel-white uppercase tracking-wider;
     box-shadow: 4px 4px 0px #0f0f1b;
     transition: all 0.1s ease;
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
   }
 
   .pixel-btn:hover {
@@ -75,7 +85,15 @@
   .pixel-input {
     @apply w-full bg-pixel-black border-3 border-pixel-light px-3 py-2 text-pixel-white;
     font-family: 'Press Start 2P', monospace;
-    font-size: 8px;
+    font-size: 10px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  @media (min-width: 640px) {
+    .pixel-input {
+      font-size: 12px;
+    }
   }
 
   .pixel-input:focus {

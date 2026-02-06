@@ -58,13 +58,13 @@ const Matches = () => {
   }
 
   return (
-    <div className="min-h-screen bg-pixel-black p-8">
+    <div className="min-h-screen bg-pixel-black p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="text-retro-purple text-xs mb-2">{'>'} BATTLE RECORDS {'<'}</div>
-          <h1 className="text-2xl text-pixel-white mb-2">MATCH HISTORY</h1>
-          <div className="text-pixel-light text-xs">YOUR COMBAT ARCHIVE</div>
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="text-retro-purple text-xs sm:text-sm mb-2">{'>'} BATTLE RECORDS {'<'}</div>
+          <h1 className="text-xl sm:text-2xl text-pixel-white mb-2">MATCH HISTORY</h1>
+          <div className="text-pixel-light text-xs sm:text-sm">YOUR COMBAT ARCHIVE</div>
         </div>
 
         {/* Matches List */}

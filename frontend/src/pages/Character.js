@@ -145,19 +145,18 @@ const Character = () => {
   const xpPercent = Math.min(100, (character.experience / getXPForNextLevel(character.level)) * 100);
 
   return (
-    <div className="h-full p-4 overflow-auto">
+    <div className="h-full p-4 sm:p-6 overflow-auto">
       {/* Header */}
-      <div className="text-center mb-4">
-        <h1 className="text-retro-purple text-lg mb-2">{character.name?.toUpperCase()}</h1>
-        <div className="text-pixel-light text-xs">
+      <div className="text-center mb-4 sm:mb-6">
+        <h1 className="text-retro-purple text-lg sm:text-xl mb-2">{character.name?.toUpperCase()}</h1>
+        <div className="text-pixel-light text-xs sm:text-sm">
           LV.{character.level} {currentSprite.name?.toUpperCase()}
         </div>
       </div>
 
       {/* Character Display */}
-      <div className="pixel-card p-4 mb-4">
-        <div className="flex items-center gap-4">
-          {/* Sprite */}
+      <div className="pixel-card p-3 sm:p-4 mb-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4">{/* Sprite */}
           <div className="w-20 h-20 bg-pixel-black border-3 border-pixel-light flex items-center justify-center overflow-hidden shrink-0">
             <div
               className="[image-rendering:pixelated]"

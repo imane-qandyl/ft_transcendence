@@ -506,28 +506,140 @@ const FriendsPanel = ({ onClose }) => {
 
   // Friends List View
   return (
-    <div className="w-64 bg-pixel-dark border-l-3 border-pixel-mid flex flex-col shrink-0">
-      {/* Header */}
-      <div className="h-10 px-3 flex items-center justify-between border-b-3 border-pixel-mid">
-        <span className="text-retro-purple text-xs">SOCIAL</span>
-        <button onClick={onClose} className="text-pixel-light hover:text-retro-red text-xs">
-          [X]
-        </button>
+    <>
+      {/* Mobile Modal Overlay */}
+      <div className="md:hidden fixed inset-0 z-50 bg-pixel-black bg-opacity-90 flex items-end">
+        <div className="w-full h-3/4 bg-pixel-dark border-t-3 border-pixel-mid flex flex-col">
+          {/* Header */}
+          <div className="h-12 px-4 flex items-center justify-between border-b-3 border-pixel-mid">
+            <span className="text-retro-purple text-sm">SOCIAL</span>
+            <button onClick={onClose} className="text-pixel-light hover:text-retro-red text-sm px-3 py-1 border-3 border-pixel-light bg-pixel-mid">
+              [X]
+            </button>
+          </div>
+
+          {/* Mobile Tabs */}
+          <div className="flex border-b-3 border-pixel-mid">
+            {['friends', 'requests', 'add', 'blocked'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-3 text-xs uppercase border-r-3 border-pixel-mid last:border-r-0 ${
+                  activeTab === tab
+                    ? 'bg-retro-purple text-pixel-black'
+                    : 'bg-pixel-mid text-pixel-light hover:text-pixel-white'
+                }`}
+              >
+                {tab === 'requests' && friendRequests.length > 0 && (
+                  <span className="inline-block w-2 h-2 bg-retro-red rounded-full ml-1"></span>
+                )}
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Mobile Content */}
+          <div className="flex-1 overflow-auto">
+            {/* Mobile Tab Content - Same as desktop but optimized for touch */}
+            {activeTab === 'friends' && (
+              <div className="p-2">
+                {loading ? (
+                  <div className="text-center text-pixel-mid text-sm py-4">LOADING...</div>
+                ) : friends.length === 0 ? (
+                  <div className="text-center text-pixel-mid text-sm py-4">
+                    <div className="mb-2">NO FRIENDS YET</div>
+                    <button
+                      onClick={() => setActiveTab('add')}
+                      className="text-retro-purple hover:text-retro-pink"
+                    >
+                      + ADD FRIENDS
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Online */}
+                    <div className="text-pixel-mid text-xs py-1">
+                      -- ONLINE ({friends.filter(f => f.status === 'online').length}) --
+                    </div>
+                    {friends.filter(f => f.status === 'online').map((friend, index) => (
+                      <div
+                        key={`mobile-online-${friend.userId || friend.id || friend.friendshipId}-${index}`}
+                        className="flex items-center justify-between p-3 border-3 border-pixel-mid bg-pixel-mid hover:border-retro-purple cursor-pointer"
+                        onClick={() => setSelectedFriend(friend)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 bg-retro-green rounded-full"></div>
+                          <span className="text-pixel-white text-sm">{friend.username || friend.friendUsername}</span>
+                        </div>
+                        {unreadCounts[friend.userId || friend.id] > 0 && (
+                          <span className="bg-retro-red text-pixel-white text-xs px-2 py-1">
+                            {unreadCounts[friend.userId || friend.id]}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Offline */}
+                    <div className="text-pixel-mid text-xs py-1 mt-2">
+                      -- OFFLINE ({friends.filter(f => f.status !== 'online').length}) --
+                    </div>
+                    {friends.filter(f => f.status !== 'online').map((friend, index) => (
+                      <div
+                        key={`mobile-offline-${friend.userId || friend.id || friend.friendshipId}-${index}`}
+                        className="flex items-center justify-between p-3 border-3 border-pixel-mid bg-pixel-mid hover:border-retro-purple cursor-pointer opacity-60"
+                        onClick={() => setSelectedFriend(friend)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 bg-pixel-light rounded-full"></div>
+                          <span className="text-pixel-white text-sm">{friend.username || friend.friendUsername}</span>
+                        </div>
+                        {unreadCounts[friend.userId || friend.id] > 0 && (
+                          <span className="bg-retro-red text-pixel-white text-xs px-2 py-1">
+                            {unreadCounts[friend.userId || friend.id]}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Other tabs would go here - keeping it simple for now */}
+            {activeTab === 'add' && (
+              <div className="p-4">
+                <div className="text-center text-pixel-mid text-sm py-4">
+                  ADD FRIENDS FEATURE
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b-3 border-pixel-mid">
-        {['friends', 'requests', 'add', 'blocked'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-[8px] uppercase border-r-3 border-pixel-mid last:border-r-0 ${
-              activeTab === tab
-                ? 'bg-retro-purple text-pixel-black'
-                : 'bg-pixel-mid text-pixel-light hover:text-pixel-white'
-            }`}
-          >
-            {tab === 'requests' && friendRequests.length > 0 && (
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex w-64 bg-pixel-dark border-l-3 border-pixel-mid flex-col shrink-0">
+        {/* Header */}
+        <div className="h-10 px-3 flex items-center justify-between border-b-3 border-pixel-mid">
+          <span className="text-retro-purple text-xs">SOCIAL</span>
+          <button onClick={onClose} className="text-pixel-light hover:text-retro-red text-xs">
+            [X]
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b-3 border-pixel-mid">
+          {['friends', 'requests', 'add', 'blocked'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2 text-[8px] uppercase border-r-3 border-pixel-mid last:border-r-0 ${
+                activeTab === tab
+                  ? 'bg-retro-purple text-pixel-black'
+                  : 'bg-pixel-mid text-pixel-light hover:text-pixel-white'
+              }`}
+            >
+              {tab === 'requests' && friendRequests.length > 0 && (
               <span className="text-retro-red mr-1">({friendRequests.length})</span>
             )}
             {tab === 'blocked' && blockedUsers.length > 0 && (
@@ -682,7 +794,8 @@ const FriendsPanel = ({ onClose }) => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

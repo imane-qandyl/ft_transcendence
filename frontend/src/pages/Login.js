@@ -38,15 +38,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-pixel-black flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-pixel-black flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-xs sm:max-w-sm">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="text-retro-purple text-lg">
+        <div className="text-center mb-6 sm:mb-8">
+          <Link to="/" className="text-retro-purple text-base sm:text-lg">
             [=====&gt;
           </Link>
-          <h1 className="text-xl text-pixel-white mt-4 mb-2">CONTINUE</h1>
-          <p className="text-pixel-light text-xs">ENTER YOUR CREDENTIALS</p>
+          <h1 className="text-lg sm:text-xl text-pixel-white mt-3 sm:mt-4 mb-2">CONTINUE</h1>
+          <p className="text-pixel-light text-xs sm:text-sm">ENTER YOUR CREDENTIALS</p>
         </div>
 
         {/* Form Card */}
