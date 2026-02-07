@@ -25,7 +25,7 @@ up:
 	@echo "   https://localhost:8443"
 	@echo ""
 	@echo "🌐 NETWORK ACCESS (for other players):"
-	@echo "   https://10.18.200.139:8443"
+	@echo "   https://10.12.4.1:8443"
 	@echo ""
 	@echo "📡 Share this URL with other players on your network!"
 	@echo "⚠️  Make sure ports 8443 and 3000 are open in firewall"
