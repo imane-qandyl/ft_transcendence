@@ -241,7 +241,6 @@ export default class PreloadScene extends Phaser.Scene {
     // Get battle data from global window object
     const battleData = window.__BATTLE_DATA__;
     if (battleData) {
-      console.log('📦 Battle data found, starting BattleScene with:', battleData);
       this.scene.start('BattleScene', battleData);
     } else {
       console.warn('⚠️ No battle data found');

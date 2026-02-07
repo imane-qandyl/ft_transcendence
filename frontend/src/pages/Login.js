@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import TwoFactorVerification from '../components/TwoFactorVerification';
+import twoFactorService from '../services/twoFactorService';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +12,8 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [tempCredentials, setTempCredentials] = useState(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -26,16 +30,70 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    const result = await login(formData.emailOrUsername, formData.password);
+    try {
+      const result = await login(formData.emailOrUsername, formData.password);
 
-    if (result.success) {
-      navigate('/play');
-    } else {
-      setError(result.error);
+      if (result.success) {
+        navigate('/play');
+      } else if (result.requires2FA) {
+        // 2FA is required
+        setTempCredentials(formData);
+        setShow2FA(true);
+      } else {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
     }
 
     setLoading(false);
   };
+
+  const handle2FAVerification = async (twoFactorCode) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await twoFactorService.loginWith2FA(tempCredentials, twoFactorCode);
+      
+      if (result.user && result.token) {
+        // Store the token
+        localStorage.setItem('token', result.token);
+        navigate('/play');
+      } else {
+        setError('2FA verification failed');
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || 'Invalid 2FA code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handle2FACancel = () => {
+    setShow2FA(false);
+    setTempCredentials(null);
+    setError('');
+  };
+
+  if (show2FA) {
+    return (
+      <div className="min-h-screen bg-pixel-black flex items-center justify-center px-4 py-8">
+        <TwoFactorVerification
+          onVerify={handle2FAVerification}
+          onCancel={handle2FACancel}
+          loading={loading}
+        />
+        {error && (
+          <div className="fixed bottom-4 left-4 right-4">
+            <div className="bg-retro-red bg-opacity-20 border border-retro-red p-3 rounded max-w-md mx-auto">
+              <p className="text-retro-red text-xs text-center">{error}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-pixel-black flex items-center justify-center px-4 py-8">

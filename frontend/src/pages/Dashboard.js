@@ -17,7 +17,7 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         // Check if user has a character
-        const charResponse = await api.get('/api/v1/characters/me');
+        const charResponse = await api.get('characters/me');
         if (charResponse.data) {
           setCharacter(charResponse.data);
           setHasCharacter(true);

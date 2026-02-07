@@ -26,7 +26,7 @@ const ChatSimple = () => {
   const fetchChats = async () => {
     try {
       setStatus('Fetching chats...');
-      const response = await api.get('/api/v1/chats');
+      const response = await api.get('chats');
       setChats(response.data.chats || []);
       setStatus(`✓ Loaded ${response.data.chats?.length || 0} chats`);
     } catch (error) {
@@ -40,7 +40,7 @@ const ChatSimple = () => {
   const fetchMessages = async (chatId) => {
     try {
       setStatus('Fetching messages...');
-      const response = await api.get(`/api/v1/chats/${chatId}/messages`);
+      const response = await api.get(`chats/${chatId}/messages`);
       setMessages(response.data.messages || []);
       setStatus(`✓ Loaded ${response.data.messages?.length || 0} messages`);
     } catch (error) {
@@ -65,7 +65,7 @@ const ChatSimple = () => {
     try {
       setStatus('Sending message...');
       
-      const response = await api.post(`/api/v1/chats/${selectedChat.id}/messages`, {
+      const response = await api.post(`chats/${selectedChat.id}/messages`, {
         content: newMessage
       });
       

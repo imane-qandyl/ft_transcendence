@@ -149,7 +149,7 @@ const Chat = () => {
 
   const fetchChats = async () => {
     try {
-      const response = await api.get('/api/v1/chats');
+      const response = await api.get('chats');
       setChats(response.data.chats || []);
     } catch (error) {
       logError('Failed to fetch chats:', error.response?.data || error.message);
@@ -202,7 +202,7 @@ const Chat = () => {
       fetchAbortControllerRef.current = abortController;
       
       // Add signal to api call - we need to use axios AbortSignal support
-      const response = await api.get(`/api/v1/chats/${chatId}/messages`, {
+      const response = await api.get(`chats/${chatId}/messages`, {
         signal: abortController.signal
       });
       
@@ -260,7 +260,7 @@ const Chat = () => {
 
   const sendViaREST = async (messageContent) => {
     try {
-      const url = `/api/v1/chats/${selectedChat.id}/messages`;
+      const url = `chats/${selectedChat.id}/messages`;
       await api.post(url, {
         content: messageContent
       });

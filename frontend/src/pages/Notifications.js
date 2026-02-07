@@ -11,7 +11,7 @@ const Notifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await api.get('/api/v1/notifications/others');
+      const response = await api.get('notifications/others');
       setNotifications(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -23,7 +23,7 @@ const Notifications = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await api.patch(`/api/v1/notifications/others/${notificationId}`);
+      await api.patch(`notifications/others/${notificationId}`);
       fetchNotifications(); // Refresh the list
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
@@ -32,7 +32,7 @@ const Notifications = () => {
 
   const markAllAsRead = async () => {
     try {
-      await api.patch('/api/v1/notifications/others');
+      await api.patch('notifications/others');
       fetchNotifications(); // Refresh the list
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);

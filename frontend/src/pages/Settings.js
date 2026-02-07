@@ -2,11 +2,75 @@
  * Settings Page - Game info and help
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SetupTwoFactor from '../components/SetupTwoFactor';
+import DisableTwoFactor from '../components/DisableTwoFactor';
+import twoFactorService from '../services/twoFactorService';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [show2FADisable, setShow2FADisable] = useState(false);
+  const [loading2FA, setLoading2FA] = useState(true);
+
+  useEffect(() => {
+    checkTwoFactorStatus();
+  }, []);
+
+  const checkTwoFactorStatus = async () => {
+    try {
+      const response = await twoFactorService.getStatus();
+      if (response.success) {
+        setTwoFactorEnabled(response.data.enabled);
+      }
+    } catch (error) {
+      console.error('Error checking 2FA status:', error);
+    } finally {
+      setLoading2FA(false);
+    }
+  };
+
+  const handle2FASetupComplete = () => {
+    setShow2FASetup(false);
+    setTwoFactorEnabled(true);
+  };
+
+  const handle2FADisableComplete = () => {
+    setShow2FADisable(false);
+    setTwoFactorEnabled(false);
+  };
+
+  if (show2FASetup) {
+    return (
+      <div className="h-full p-4 overflow-auto">
+        <div className="text-center mb-6">
+          <div className="text-retro-purple text-lg mb-2">[🔐] SECURITY</div>
+          <div className="text-pixel-light text-xs">TWO-FACTOR AUTHENTICATION</div>
+        </div>
+        <SetupTwoFactor
+          onSetupComplete={handle2FASetupComplete}
+          onCancel={() => setShow2FASetup(false)}
+        />
+      </div>
+    );
+  }
+
+  if (show2FADisable) {
+    return (
+      <div className="h-full p-4 overflow-auto">
+        <div className="text-center mb-6">
+          <div className="text-retro-purple text-lg mb-2">[🔐] SECURITY</div>
+          <div className="text-pixel-light text-xs">TWO-FACTOR AUTHENTICATION</div>
+        </div>
+        <DisableTwoFactor
+          onDisableComplete={handle2FADisableComplete}
+          onCancel={() => setShow2FADisable(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full p-4 overflow-auto">
@@ -14,6 +78,34 @@ const Settings = () => {
       <div className="text-center mb-6">
         <div className="text-retro-purple text-lg mb-2">[?] SETTINGS</div>
         <div className="text-pixel-light text-xs">GAME INFO & HELP</div>
+      </div>
+
+      {/* Security Section */}
+      <div className="pixel-card p-4 mb-4">
+        <div className="text-retro-purple text-xs mb-3">-- SECURITY --</div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-pixel-white text-xs">TWO-FACTOR AUTHENTICATION</div>
+              <div className="text-pixel-mid text-[10px]">
+                {loading2FA ? 'CHECKING...' : twoFactorEnabled ? 'ENABLED' : 'DISABLED'}
+              </div>
+            </div>
+            {!loading2FA && (
+              <button
+                onClick={() => twoFactorEnabled ? setShow2FADisable(true) : setShow2FASetup(true)}
+                className={`pixel-btn text-xs ${twoFactorEnabled ? 'pixel-btn-danger' : 'pixel-btn-primary'}`}
+              >
+                {twoFactorEnabled ? 'DISABLE' : 'ENABLE'}
+              </button>
+            )}
+          </div>
+          {twoFactorEnabled && (
+            <div className="text-retro-green text-[10px] flex items-center">
+              ✓ Your account is protected with 2FA
+            </div>
+          )}
+        </div>
       </div>
 
       {/* About the Game */}

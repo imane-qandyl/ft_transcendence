@@ -22,26 +22,31 @@ const FriendsPanel = ({ onClose }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const [currentChatId, setCurrentChatId] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
 
   useEffect(() => {
-    fetchFriends();
-    fetchFriendRequests();
-    fetchBlockedUsers();
+    // Add small delay to prevent initial rate limiting burst
+    const initTimer = setTimeout(() => {
+      fetchFriends();
+      fetchFriendRequests();
+      fetchBlockedUsers();
+    }, 100);
     
-    // Poll for new friends every 10 seconds
+    // Poll for new friends every 30 seconds (reduced from 10)
     const friendsInterval = setInterval(() => {
       fetchFriends();
-    }, 10000);
+    }, 30000);
     
-    // Poll for new friend requests every 10 seconds
+    // Poll for new friend requests every 30 seconds (reduced from 10)
     const requestsInterval = setInterval(() => {
       fetchFriendRequests();
-    }, 10000);
+    }, 30000);
     
     // Cleanup on unmount
     return () => {
+      clearTimeout(initTimer);
       clearInterval(friendsInterval);
       clearInterval(requestsInterval);
     };
@@ -61,10 +66,10 @@ const FriendsPanel = ({ onClose }) => {
       // Then fetch messages
       fetchMessages(friendId);
       
-      // Poll for new messages every 5 seconds while viewing chat
+      // Poll for new messages every 15 seconds while viewing chat (reduced from 5)
       const messagesInterval = setInterval(() => {
         fetchMessages(friendId);
-      }, 5000);
+      }, 15000);
       
       // Cleanup when friend is deselected
       return () => {
@@ -78,9 +83,9 @@ const FriendsPanel = ({ onClose }) => {
     };
   }, [selectedFriend]);
 
-  const fetchFriends = async () => {
+  const fetchFriends = async (retryCount = 0) => {
     try {
-      const response = await api.get('/api/v1/friends/');
+      const response = await api.get('friends/');
       // API returns { success: true, data: [...] }
       const friendsData = response.data.data || [];
       setFriends(friendsData);
@@ -93,18 +98,30 @@ const FriendsPanel = ({ onClose }) => {
       });
       setUnreadCounts(unreadMap);
     } catch (err) {
+      if (err.response?.status === 429 && retryCount < 2) {
+        // Rate limited - wait and retry with exponential backoff
+        const delay = Math.pow(2, retryCount) * 1000 + Math.random() * 1000;
+        setTimeout(() => fetchFriends(retryCount + 1), delay);
+        return;
+      }
       console.error('[FriendsPanel] Failed to fetch friends:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchFriendRequests = async () => {
+  const fetchFriendRequests = async (retryCount = 0) => {
     try {
-      const response = await api.get('/api/v1/friends/requests/received');
+      const response = await api.get('friends/requests/received');
       // API returns { success: true, data: [...] }
       setFriendRequests(response.data.data || []);
     } catch (err) {
+      if (err.response?.status === 429 && retryCount < 2) {
+        // Rate limited - wait and retry with exponential backoff
+        const delay = Math.pow(2, retryCount) * 1000 + Math.random() * 1000;
+        setTimeout(() => fetchFriendRequests(retryCount + 1), delay);
+        return;
+      }
       console.error('Failed to fetch requests:', err);
     }
   };
@@ -123,7 +140,7 @@ const FriendsPanel = ({ onClose }) => {
     try {
       try {
         // Get chat between current user and friend
-        const response = await api.get(`/api/v1/chats/between/${friendId}`);
+        const response = await api.get(`chats/between/${friendId}`);
         
         // Response format: { success: true, chat_id: 1 }
         const chatId = response.data.chat_id || response.data.chat?.id;
@@ -133,13 +150,13 @@ const FriendsPanel = ({ onClose }) => {
           
           // Mark messages as read immediately
           try {
-            await api.put(`/api/v1/chats/${chatId}/read`, {});
+            await api.put(`chats/${chatId}/read`, {});
           } catch (readErr) {
             // Failed to mark messages as read - continue silently
           }
           
           // Fetch messages immediately
-          const messagesResponse = await api.get(`/api/v1/chats/${chatId}/messages`);
+          const messagesResponse = await api.get(`chats/${chatId}/messages`);
           const msgs = messagesResponse.data.data || messagesResponse.data.messages || [];
           
           // Only update if we have messages, don't clear if empty
@@ -215,7 +232,7 @@ const FriendsPanel = ({ onClose }) => {
       
       try {
         // Try to get existing chat
-        const chatResponse = await api.get(`/api/v1/chats/between/${friendId}`);
+        const chatResponse = await api.get(`chats/between/${friendId}`);
         
         // Response format: { success: true, chat_id: 1 }
         chatId = chatResponse.data.chat_id || chatResponse.data.chat?.id;
@@ -223,7 +240,7 @@ const FriendsPanel = ({ onClose }) => {
         // If chat doesn't exist (404), create one
         if (err.response?.status === 404) {
           try {
-            const createResponse = await api.post('/api/v1/chats/', { user2_id: friendId });
+            const createResponse = await api.post('chats/', { user2_id: friendId });
             chatId = createResponse.data.chat_id || createResponse.data.chat?.id;
             
             if (!chatId) {
@@ -245,11 +262,11 @@ const FriendsPanel = ({ onClose }) => {
       }
       
       // Send message to the chat
-      const sendResponse = await api.post(`/api/v1/chats/${chatId}/messages`, { content: newMessage });
+      const sendResponse = await api.post(`chats/${chatId}/messages`, { content: newMessage });
       
       // Refresh messages from server immediately after sending
       try {
-        const refreshedMessages = await api.get(`/api/v1/chats/${chatId}/messages`);
+        const refreshedMessages = await api.get(`chats/${chatId}/messages`);
         setMessages(refreshedMessages.data.data || refreshedMessages.data.messages || []);
       } catch (refreshErr) {
         // Fallback: add message to local state
@@ -278,7 +295,7 @@ const FriendsPanel = ({ onClose }) => {
     }
     setSearchLoading(true);
     try {
-      const response = await api.get(`/api/v1/users/search?q=${encodeURIComponent(query)}`);
+      const response = await api.get(`users/search?q=${encodeURIComponent(query)}`);
       setSearchResults(response.data.users || []);
     } catch (err) {
       console.error('Search failed:', err);
@@ -291,17 +308,20 @@ const FriendsPanel = ({ onClose }) => {
   const sendFriendRequest = async (userId) => {
     try {
       // Correct endpoint: POST /api/v1/friends/requests with receiverId in body
-      await api.post('/api/v1/friends/requests', { receiverId: userId });
+      await api.post('friends/requests', { receiverId: userId });
       setSearchResults(prev => prev.filter(u => u.id !== userId));
+      setMessage('Friend request sent successfully!');
     } catch (err) {
       console.error('Failed to send request:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to send friend request';
+      setMessage(`Error: ${errorMsg}`);
     }
   };
 
   const acceptRequest = async (friendshipId) => {
     try {
       // Correct endpoint: PUT /api/v1/friends/requests/:friendshipId/respond
-      await api.put(`/api/v1/friends/requests/${friendshipId}/respond`, { action: 'accept' });
+      await api.put(`friends/requests/${friendshipId}/respond`, { action: 'accept' });
       await fetchFriends();
       await fetchFriendRequests();
     } catch (err) {
@@ -311,7 +331,7 @@ const FriendsPanel = ({ onClose }) => {
 
   const declineRequest = async (friendshipId) => {
     try {
-      await api.put(`/api/v1/friends/requests/${friendshipId}/respond`, { action: 'decline' });
+      await api.put(`friends/requests/${friendshipId}/respond`, { action: 'decline' });
       await fetchFriendRequests();
     } catch (err) {
       console.error('Failed to decline:', err);

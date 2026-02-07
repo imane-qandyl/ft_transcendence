@@ -21,7 +21,7 @@ const AddFriend = () => {
 
     try {
       setSearching(true);
-      const response = await api.get(`/api/v1/users/search?q=${encodeURIComponent(query)}`);
+      const response = await api.get(`users/search?q=${encodeURIComponent(query)}`);
       setSearchResults(response.data.users || []);
     } catch (error) {
       console.error('Search failed:', error);
@@ -37,7 +37,7 @@ const AddFriend = () => {
     setMessage('');
 
     try {
-      await api.post('/api/v1/friends/requests', {
+      await api.post('friends/requests', {
         receiverId: userId
       });
 

@@ -13,3 +13,6 @@ export { default as CharacterSelector } from './CharacterSelector';
 export { default as MatchmakingPanel } from './MatchmakingPanel';
 export { default as GameLayout } from './GameLayout';
 export { default as FriendsPanel } from './FriendsPanel';
+export { default as SetupTwoFactor } from './SetupTwoFactor';
+export { default as DisableTwoFactor } from './DisableTwoFactor';
+export { default as TwoFactorVerification } from './TwoFactorVerification';

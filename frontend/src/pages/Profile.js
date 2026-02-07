@@ -42,7 +42,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get('/api/v1/users/me');
+      const response = await api.get('users/me');
       setUserData(response.data);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
@@ -53,7 +53,7 @@ const Profile = () => {
 
   const fetchCharacter = async () => {
     try {
-      const response = await api.get('/api/v1/characters/me');
+      const response = await api.get('characters/me');
       setCharacter(response.data.character);
     } catch (err) {
       console.error('No character found');
@@ -62,7 +62,7 @@ const Profile = () => {
 
   const fetchMatches = async () => {
     try {
-      const response = await api.get('/api/v1/matches');
+      const response = await api.get('matches');
       setMatches(response.data.matches || []);
     } catch (error) {
       console.error('Failed to fetch match Data', error);
@@ -72,7 +72,7 @@ const Profile = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/api/v1/users');
+      const response = await api.get('users');
       setUsers(response.data.users || []);
     } catch (error) {
       console.error('Failed to fetch users Data', error);
@@ -113,7 +113,10 @@ const Profile = () => {
       });
 
       // Persist to backend (updates users.avatar_url in DB)
-      await api.put(`/api/v1/users/${user.id}`, { avatar_url: imageUrl });
+      if (!userData?.id) {
+        throw new Error('User ID not available');
+      }
+      await api.put(`users/${userData.id}`, { avatar_url: imageUrl });
 
       // Update local state immediately so the UI reflects the change
       setProfilePicture(imageUrl);
@@ -134,7 +137,10 @@ const Profile = () => {
 
     try {
       // Send null (or empty string) to clear avatar_url in the DB
-      await api.put(`/api/v1/users/${user.id}`, { avatar_url: null });
+      if (!userData?.id) {
+        throw new Error('User ID not available');
+      }
+      await api.put(`users/${userData.id}`, { avatar_url: null });
 
       // Clear local state — this triggers the fallback to the sprite avatar
       setProfilePicture(null);

@@ -13,7 +13,7 @@ const Matches = () => {
 
   const fetchMatches = async () => {
     try {
-      const response = await api.get('/api/v1/matches');
+      const response = await api.get('matches');
       setMatches(response.data.matches || []);
     } catch (error) {
       console.error('Failed to fetch matches:', error);

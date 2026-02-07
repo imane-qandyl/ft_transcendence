@@ -309,19 +309,19 @@ class GameSocketHandler {
       const isAIMatch = matchResult.winnerId === 'ai' || matchResult.loserId === 'ai';
       
       if (!isAIMatch) {
-        // Only save real player vs player matches to database
-        const [match] = await knex('game_matches').insert({
-          player1_id: matchResult.winnerCharacterId,
-          player2_id: matchResult.loserCharacterId,
-          winner_id: matchResult.winnerCharacterId,
+        // Save to the matches table that the API uses (user-based, not character-based)
+        const [match] = await knex('matches').insert({
+          player1_id: matchResult.winnerId,  // These are user IDs
+          player2_id: matchResult.loserId,   // These are user IDs
+          winner_id: matchResult.winnerId,   // User ID of winner
           match_type: 'ranked',
-          duration_seconds: matchResult.duration,
-          player1_damage_dealt: matchResult.player1DamageDealt,
-          player2_damage_dealt: matchResult.player2DamageDealt,
-          player1_elo_change: matchResult.rewards.eloChange,
-          player2_elo_change: matchResult.loserEloChange,
-          winner_xp: matchResult.rewards.xp,
-          winner_coins: matchResult.rewards.coins
+          status: 'completed',
+          player1_score: 1, // Winner gets 1 point
+          player2_score: 0, // Loser gets 0 points
+          started_at: new Date(Date.now() - (matchResult.duration * 1000)), // Calculate start time
+          ended_at: new Date(),
+          created_at: new Date(),
+          updated_at: new Date()
         }).returning('*');
 
         // Update winner's character
@@ -366,8 +366,6 @@ class GameSocketHandler {
               elo_rating: matchResult.loserEloChange
             });
         }
-        
-        console.log(`AI match completed: Human ${isHumanWinner ? 'won' : 'lost'} against AI`);
       }
 
       // Check for level up (only for the winner if not AI)

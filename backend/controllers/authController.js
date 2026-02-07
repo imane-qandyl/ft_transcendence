@@ -252,10 +252,35 @@ module.exports = (userModel) => {
 
         login: async (request, reply) => {
             try {
-                const { email, username, password } = request.body;
+                const { email, username, password, twoFactorToken } = request.body;
                 const emailOrUsername = email || username; // Accept either email or username
 
                 const user = await userModel.loginUser(emailOrUsername, password);
+
+                // Check if user has 2FA enabled
+                const fullUser = await request.server.knex('users').where('id', user.id).first();
+                
+                if (fullUser.twofa_enabled) {
+                    if (!twoFactorToken) {
+                        // 2FA is required but not provided
+                        return reply.code(200).send({
+                            requires2FA: true,
+                            tempUserId: user.id,
+                            message: "2FA token required"
+                        });
+                    }
+                    
+                    // Verify 2FA token
+                    try {
+                        await userModel.verify2FA(user.id, twoFactorToken);
+                    } catch (error) {
+                        return reply.code(401).send({
+                            statusCode: 401,
+                            error: "Unauthorized",
+                            message: "Invalid 2FA token"
+                        });
+                    }
+                }
 
                 // Generate JWT token if fastify.jwt is available
                 if (request.server.jwt) {

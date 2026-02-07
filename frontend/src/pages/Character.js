@@ -26,7 +26,7 @@ const Character = () => {
   const fetchCharacter = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/v1/characters/me');
+      const response = await api.get('characters/me');
       setCharacter(response.data.character);
       setError('');
       fetchAllCharacters();
@@ -40,7 +40,7 @@ const Character = () => {
 
   const fetchAllCharacters = async () => {
     try {
-      const response = await api.get('/api/v1/characters/all');
+      const response = await api.get('characters/all');
       setAllCharacters(response.data.characters || []);
       setSlotsInfo(response.data.slots || { used: 0, max: 1, nextUnlockLevel: 20 });
     } catch (err) {
@@ -50,7 +50,7 @@ const Character = () => {
 
   const switchCharacter = async (characterId) => {
     try {
-      await api.post(`/api/v1/characters/${characterId}/select`);
+      await api.post(`characters/${characterId}/select`);
       setMessage('CHARACTER SWITCHED!');
       setShowCreateNew(false);
       fetchCharacter();
@@ -70,7 +70,7 @@ const Character = () => {
     try {
       setUpgrading(true);
       setMessage('');
-      const response = await api.post('/api/v1/characters/me/upgrade', { stat, useFreePoints });
+      const response = await api.post('characters/me/upgrade', { stat, useFreePoints });
       setMessage(`${stat.toUpperCase()} +1!`);
       setCharacter(prev => ({
         ...prev,
@@ -87,7 +87,7 @@ const Character = () => {
 
   const selectCharacterSprite = async (spriteId) => {
     try {
-      await api.patch('/api/v1/characters/me/select-sprite', { selectedCharacter: spriteId });
+      await api.patch('characters/me/select-sprite', { selectedCharacter: spriteId });
       setCharacter(prev => ({
         ...prev,
         customization: { ...prev.customization, selected_character: spriteId }

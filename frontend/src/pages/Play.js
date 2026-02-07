@@ -83,7 +83,7 @@ const Play = () => {
 
   const fetchCharacter = async () => {
     try {
-      const response = await api.get('/api/v1/characters/me');
+      const response = await api.get('characters/me');
       setCharacter(response.data.character);
     } catch (err) {
       console.error('No character found');

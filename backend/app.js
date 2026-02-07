@@ -4,6 +4,7 @@ const fastify = require("fastify")({
 	} : {
 		level: process.env.LOG_LEVEL || "info"
 	},
+	bodyLimit: 10 * 1024 * 1024, // 10MB limit for file uploads
 });
 
 // Import middleware

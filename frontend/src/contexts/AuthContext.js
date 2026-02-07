@@ -23,12 +23,28 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Set user state with token - you could verify token here by calling /me endpoint
-      const user = { token, isAuthenticated: true };
-      setUser(user);
+      // Fetch user profile data when token exists
+      fetchUserProfile();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await api.get('users/me');
+      const userData = response.data;
+      setUser({ ...userData, token: localStorage.getItem('token'), isAuthenticated: true });
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      // Token might be invalid, clear it
+      localStorage.removeItem('token');
+      delete api.defaults.headers.common['Authorization'];
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (emailOrUsername, password) => {
     try {
@@ -38,7 +54,16 @@ export const AuthProvider = ({ children }) => {
         ? { email: emailOrUsername, password }
         : { username: emailOrUsername, password };
 
-      const response = await api.post('/api/v1/auth/login', requestBody);
+      const response = await api.post('auth/login', requestBody);
+      
+      // Check if 2FA is required
+      if (response.data.requires2FA) {
+        return { 
+          success: false, 
+          requires2FA: true, 
+          tempUserId: response.data.tempUserId 
+        };
+      }
       
       const { token, user: userData } = response.data;
       
@@ -61,7 +86,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
-      const response = await api.post('/api/v1/auth/register', {
+      const response = await api.post('auth/register', {
         username,
         email,
         password
@@ -91,7 +116,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'No Google token provided' };
       }
       
-      const response = await api.post('/api/v1/auth/google', {
+      const response = await api.post('auth/google', {
         token: googleToken,
         deviceId: 'web-browser-' + Date.now() // Simple device ID
       });

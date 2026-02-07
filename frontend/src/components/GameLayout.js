@@ -37,7 +37,7 @@ const GameLayout = ({ children }) => {
     
     const fetchNotifications = async () => {
       try {
-        const response = await api.get('/api/v1/notifications/others');
+        const response = await api.get('notifications/others');
         const notifications = response.data.data || [];
         const unreadCount = notifications.filter(n => !n.is_read).length;
         setUnreadNotifications(unreadCount);

@@ -15,7 +15,7 @@ const Friends = () => {
 
   const fetchFriends = async () => {
     try {
-      const response = await api.get('/api/v1/friends');
+      const response = await api.get('friends');
       setFriends(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch friends:', error);
@@ -25,7 +25,7 @@ const Friends = () => {
 
   const fetchFriendRequests = async () => {
     try {
-      const response = await api.get('/api/v1/friends/requests/received');
+      const response = await api.get('friends/requests/received');
       setFriendRequests(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch friend requests:', error);
@@ -38,7 +38,7 @@ const Friends = () => {
   const sendFriendRequest = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/v1/friends/requests', {
+      await api.post('friends/requests', {
         user2_email: newFriendEmail
       });
       setMessage('Friend request sent successfully!');
@@ -52,7 +52,7 @@ const Friends = () => {
 
   const respondToRequest = async (requestId, action) => {
     try {
-      await api.put(`/api/v1/friends/requests/${requestId}/respond`, {
+      await api.put(`friends/requests/${requestId}/respond`, {
         action: action
       });
       fetchFriendRequests();

@@ -25,7 +25,7 @@ export default class BattleScene extends Phaser.Scene {
     const battleData = data?.socket ? data : window.__BATTLE_DATA__;
     
     if (!battleData) {
-      console.error('❌ No battle data available!');
+      console.error('No battle data available!');
       return;
     }
     
@@ -37,9 +37,7 @@ export default class BattleScene extends Phaser.Scene {
     this.isMyTurn = battleData.isYourTurn || false;
     this.gameEnded = false; // Track if game has ended
     
-    console.log('🎮 Battle initialized:');
-    console.log('  - Socket:', this.socket ? 'connected' : 'null');
-    console.log('  - Match ID:', this.matchId);
+
     console.log('  - My Turn:', this.isMyTurn);
     console.log('  - My Character ID:', this.myCharacterId);
     console.log('  - My User ID:', this.myUserId);
@@ -52,10 +50,7 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   create() {
-    console.log('🎮 BattleScene create() called');
-    console.log('  - gameState:', this.gameState ? 'exists' : 'null');
-    console.log('  - socket:', this.socket ? 'connected' : 'null');
-    console.log('  - isMyTurn:', this.isMyTurn);
+
     
     // Safety check - if no game state, we can't continue
     if (!this.gameState) {
@@ -79,7 +74,6 @@ export default class BattleScene extends Phaser.Scene {
     }
     const backgroundIndex = seed % backgrounds.length;
     const selectedBg = backgrounds[backgroundIndex];
-    console.log('🎨 Selected background:', selectedBg, '(matchId seed:', seed, ')');
     
     // Background - use the selected background (same for both players)
     const bgImage = this.add.image(width / 2, height / 2, selectedBg);
@@ -188,7 +182,7 @@ export default class BattleScene extends Phaser.Scene {
     const player1NeedsFlip = largeSprites.includes(player1Char); // Large sprites need flip to face right
     const player2NeedsFlip = !largeSprites.includes(player2Char); // Small sprites need flip to face left
 
-    console.log('🎮 BattleScene - Game State:', this.gameState);
+
     console.log('👤 Player 1 Character:', player1Char, 'Scale:', player1Scale, 'Flip:', player1NeedsFlip);
     console.log('👤 Player 2 Character:', player2Char, 'Scale:', player2Scale, 'Flip:', player2NeedsFlip);
     console.log('🖼️ Available textures:', Object.keys(this.textures.list));
@@ -379,7 +373,7 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   performAction(action) {
-    console.log('🎮 performAction called:', action, 'isMyTurn:', this.isMyTurn, 'socket:', this.socket ? 'connected' : 'null');
+
     
     if (!this.isMyTurn) {
       console.log('⚠️ Not my turn, ignoring action');

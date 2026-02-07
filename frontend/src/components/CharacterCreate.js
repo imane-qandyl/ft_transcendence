@@ -194,7 +194,7 @@ const CharacterCreate = ({ onCharacterCreated }) => {
         setLoading(false);
         return;
       }
-      const response = await api.post('/api/v1/characters', {
+      const response = await api.post('characters', {
         name,
         sprite_body: selectedCharacter,
         sprite_hair: 'hair_short',

@@ -23,6 +23,7 @@ up:
 	@echo "============================================"
 	@echo "🏠 HOST ACCESS:"
 	@echo "   https://localhost:8443"
+	@echo "   https://mara-unrated-jeanice.ngrok-free.dev"
 	@echo "============================================"
 
 # Start in foreground (with logs)
@@ -60,6 +61,14 @@ restart: down up
 # Rebuild and restart
 rebuild: clean build up
 
+# Rebuild without losing data (just rebuild containers)
+rebuild-preserve: 
+	@echo "Rebuilding containers while preserving data..."
+	docker compose down
+	docker compose build
+	docker compose up -d backend frontend
+	@echo "Rebuild complete with data preserved!"
+
 # Generate new SSL certificates
 ssl:
 	@echo "Regenerating SSL certificates..."
@@ -83,7 +92,8 @@ help:
 	@echo "  make clean    - Stop and remove all data"
 	@echo "  make logs     - View all service logs"
 	@echo "  make restart  - Restart all services"
-	@echo "  make rebuild  - Clean rebuild everything"
+	@echo "  make rebuild  - Clean rebuild everything + recreate sample data"
+	@echo "  make rebuild-preserve - Rebuild containers but keep your data"
 	@echo "  make ssl      - Regenerate SSL certificates"
 	@echo "  make status   - Check service status"
 	@echo "  make help     - Show this help message"
