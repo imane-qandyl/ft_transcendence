@@ -230,14 +230,14 @@ const GameLayout = ({ children }) => {
 
         {/* Right Sidebar - Friends Panel (Desktop) */}
         {showFriends && (
-          <div className="hidden md:block">
+          <div className="hidden md:block h-full">
             <FriendsPanel onClose={() => setShowFriends(false)} />
           </div>
         )}
         
         {/* Mobile Friends Panel */}
         {showFriends && (
-          <div className="md:hidden">
+          <div className="md:hidden fixed inset-0 z-50">
             <FriendsPanel onClose={() => setShowFriends(false)} />
           </div>
         )}

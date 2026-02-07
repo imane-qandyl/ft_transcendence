@@ -21,7 +21,14 @@ up:
 	@echo "============================================"
 	@echo "Welcome to ft_transcendence!"
 	@echo "============================================"
-	@echo "Access the application at: https://localhost:8443"
+	@echo "🏠 HOST ACCESS:"
+	@echo "   https://localhost:8443"
+	@echo ""
+	@echo "🌐 NETWORK ACCESS (for other players):"
+	@echo "   https://10.18.200.139:8443"
+	@echo ""
+	@echo "📡 Share this URL with other players on your network!"
+	@echo "⚠️  Make sure ports 8443 and 3000 are open in firewall"
 	@echo "============================================"
 
 # Start in foreground (with logs)

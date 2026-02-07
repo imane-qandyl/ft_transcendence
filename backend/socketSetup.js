@@ -14,8 +14,8 @@ async function registerSocketIO(fastify) {
   const io = new Server(fastify.server, {
     cors: {
       origin: process.env.NODE_ENV === 'production'
-        ? [process.env.FRONTEND_URL || 'http://localhost:3000']
-        : '*',
+        ? [process.env.FRONTEND_URL || 'https://localhost:8443']
+        : ['https://localhost:8443', `https://${process.env.NETWORK_HOST_IP || '10.18.200.139'}:8443`, '*'],
       credentials: true,
       methods: ['GET', 'POST']
     },

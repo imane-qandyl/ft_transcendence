@@ -366,9 +366,9 @@ const FriendsPanel = ({ onClose }) => {
   // Chat View
   if (selectedFriend) {
     return (
-      <div className="w-64 bg-pixel-dark border-l-3 border-pixel-mid flex flex-col shrink-0">
+      <div className="w-64 bg-pixel-dark border-l-3 border-pixel-mid flex flex-col shrink-0 h-full max-h-full">
         {/* Chat Header */}
-        <div className="h-10 px-2 flex items-center gap-2 border-b-3 border-pixel-mid">
+        <div className="h-10 px-2 flex items-center gap-2 border-b-3 border-pixel-mid shrink-0">
           <button
             onClick={() => setSelectedFriend(null)}
             className="text-pixel-light hover:text-retro-purple text-xs"
@@ -382,9 +382,9 @@ const FriendsPanel = ({ onClose }) => {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-auto p-2 space-y-2 relative">
+        <div className="flex-1 overflow-auto p-2 space-y-2 relative min-h-0">
           {messagesLoading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-pixel-dark bg-opacity-90">
+            <div className="absolute inset-0 flex items-center justify-center bg-pixel-dark bg-opacity-90 z-10">
               <div className="text-center">
                 <div className="text-retro-yellow text-xl mb-2">⏳</div>
                 <div className="text-pixel-white text-xs uppercase">LOADING MESSAGES...</div>
@@ -395,32 +395,34 @@ const FriendsPanel = ({ onClose }) => {
               NO MESSAGES YET
             </div>
           ) : (
-            messages.map((msg) => {
-              // Use the is_own_message flag from the backend, fall back to checking sender_id
-              const isOwnMessage = msg.is_own_message !== undefined ? msg.is_own_message : (msg.sender_id === user?.id);
-              
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                >
-                  <span
-                    className={`inline-block max-w-xs px-3 py-2 border-2 text-xs break-words ${
-                      isOwnMessage
-                        ? 'bg-retro-purple border-retro-purple text-pixel-black'
-                        : 'bg-pixel-mid border-pixel-light text-pixel-white'
-                    }`}
+            <div className="flex flex-col space-y-2">
+              {messages.map((msg) => {
+                // Use the is_own_message flag from the backend, fall back to checking sender_id
+                const isOwnMessage = msg.is_own_message !== undefined ? msg.is_own_message : (msg.sender_id === user?.id);
+                
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.content}
-                  </span>
-                </div>
-              );
-            })
+                    <span
+                      className={`inline-block max-w-xs px-3 py-2 border-2 text-xs break-words ${
+                        isOwnMessage
+                          ? 'bg-retro-purple border-retro-purple text-pixel-black'
+                          : 'bg-pixel-mid border-pixel-light text-pixel-white'
+                      }`}
+                    >
+                      {msg.content}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
         {/* Message Input */}
-        <div className="p-2 border-t-3 border-pixel-mid">
+        <div className="p-2 border-t-3 border-pixel-mid shrink-0">
           <div className="flex gap-1">
             <input
               type="text"
@@ -506,10 +508,6 @@ const FriendsPanel = ({ onClose }) => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {/* Online */}
-                    <div className="text-pixel-mid text-xs py-1">
-                      -- ONLINE ({friends.filter(f => f.status === 'online').length}) --
-                    </div>
                     {friends.filter(f => f.status === 'online').map((friend, index) => (
                       <div
                         key={`mobile-online-${friend.userId || friend.id || friend.friendshipId}-${index}`}
@@ -527,11 +525,6 @@ const FriendsPanel = ({ onClose }) => {
                         )}
                       </div>
                     ))}
-
-                    {/* Offline */}
-                    <div className="text-pixel-mid text-xs py-1 mt-2">
-                      -- OFFLINE ({friends.filter(f => f.status !== 'online').length}) --
-                    </div>
                     {friends.filter(f => f.status !== 'online').map((friend, index) => (
                       <div
                         key={`mobile-offline-${friend.userId || friend.id || friend.friendshipId}-${index}`}

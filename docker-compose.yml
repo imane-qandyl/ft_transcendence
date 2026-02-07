@@ -63,7 +63,8 @@ services:
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout /ssl/key.pem \
             -out /ssl/cert.pem \
-            -subj '/C=FR/ST=IDF/L=Paris/O=42/OU=ft_transcendence/CN=localhost'
+            -subj '/C=FR/ST=IDF/L=Paris/O=42/OU=ft_transcendence/CN=localhost' \
+            -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1,IP:10.18.200.139'
           chmod 644 /ssl/cert.pem /ssl/key.pem
           echo 'SSL certificates generated successfully!'
         else
