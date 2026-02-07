@@ -32,7 +32,7 @@ const Profile = () => {
   }, [userData]);
 
   useEffect(() => {
-    if (!users.length || !matches.length || !user) return;
+    if (!users || !matches || !user || !users.length || !matches.length) return;
     const leaderboardData = calculateLeaderboard(users, matches, user);
     setUserData(prev => ({
       ...prev,
@@ -63,18 +63,20 @@ const Profile = () => {
   const fetchMatches = async () => {
     try {
       const response = await api.get('/api/v1/matches');
-      setMatches(response.data.matches);
+      setMatches(response.data.matches || []);
     } catch (error) {
       console.error('Failed to fetch match Data', error);
+      setMatches([]); // Ensure matches is always an array
     }
   };
 
   const fetchUsers = async () => {
     try {
       const response = await api.get('/api/v1/users');
-      setUsers(response.data.users);
+      setUsers(response.data.users || []);
     } catch (error) {
       console.error('Failed to fetch users Data', error);
+      setUsers([]); // Ensure users is always an array
     }
   };
 
