@@ -62,15 +62,9 @@ class GameSocketHandler {
       const user = await knex('users').where('id', userId).first();
       character.username = user?.username || character.name;
 
-      // Get equipped items for stat calculation
-      const equipment = await knex('character_equipment')
-        .join('items', 'character_equipment.item_id', 'items.id')
-        .where('character_equipment.character_id', character.id)
-        .select('items.*');
-
-      // Calculate total stats with equipment
+      // Calculate total stats for combat
       const combatService = require('../services/combatService');
-      const totalStats = combatService.calculateTotalStats(character, equipment);
+      const totalStats = combatService.calculateTotalStats(character);
 
       // Update character with total stats for combat
       Object.assign(character, totalStats);

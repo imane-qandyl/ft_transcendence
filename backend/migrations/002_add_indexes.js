@@ -8,17 +8,11 @@ exports.up = async function(knex) {
 
     await knex.schema.alterTable('matches', function(table) {
         table.index(['player1_id', 'player2_id']);
-        table.index('tournament_id');
         table.index('winner_id');
     });
 
     await knex.schema.alterTable('friends', function(table) {
         table.index(['user_id', 'friend_id']);
-        table.index('status');
-    });
-
-    await knex.schema.alterTable('tournaments', function(table) {
-        table.index('created_by');
         table.index('status');
     });
 
@@ -39,11 +33,6 @@ exports.down = async function(knex) {
         table.dropIndex(['user_id', 'device_id']);
     });
 
-    await knex.schema.alterTable('tournaments', function(table) {
-        table.dropIndex('created_by');
-        table.dropIndex('status');
-    });
-
     await knex.schema.alterTable('friends', function(table) {
         table.dropIndex(['user_id', 'friend_id']);
         table.dropIndex('status');
@@ -51,7 +40,6 @@ exports.down = async function(knex) {
 
     await knex.schema.alterTable('matches', function(table) {
         table.dropIndex(['player1_id', 'player2_id']);
-        table.dropIndex('tournament_id');
         table.dropIndex('winner_id');
     });
 

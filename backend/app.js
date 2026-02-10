@@ -9,7 +9,7 @@ const fastify = require("fastify")({
 
 // Import middleware
 const { globalErrorHandler, notFoundHandler } = require("./middleware/errorHandler");
-const { authenticate, createRateLimit } = require("./middleware/auth");
+const { authenticate } = require("./middleware/auth");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
@@ -20,9 +20,6 @@ const chatRoutes = require("./routes/chatRoutes");
 const wsChatRoutes = require("./routes/wsChatRoutes");
 const friendRoutes = require("./routes/friendRoutes");
 const characterRoutes = require("./routes/characterRoutes");
-const shopRoutes = require("./routes/shopRoutes");
-const territoryRoutes = require("./routes/territoryRoutes");
-const crimeRoutes = require("./routes/crimeRoutes");
 
 // Import models
 const User = require("./models/User");
@@ -177,24 +174,6 @@ const start = async () => {
 		// Register character routes
 		fastify.register(characterRoutes, {
 			prefix: "/api/v1/characters",
-			db: db,
-		});
-
-		// Register shop routes
-		fastify.register(shopRoutes, {
-			prefix: "/api/v1/shop",
-			db: db,
-		});
-
-		// Register territory routes
-		fastify.register(territoryRoutes, {
-			prefix: "/api/v1",
-			db: db,
-		});
-
-		// Register crime routes
-		fastify.register(crimeRoutes, {
-			prefix: "/api/v1",
 			db: db,
 		});
 

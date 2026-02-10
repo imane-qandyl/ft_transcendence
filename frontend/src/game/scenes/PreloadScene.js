@@ -3,7 +3,6 @@
  */
 
 import Phaser from 'phaser';
-import { PixelArtGenerator } from '../utils/pixelArtGenerator';
 
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -161,10 +160,6 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('bg_mountains', '/assets/backgrounds/mountains.jpg');
     this.load.image('bg_camp', '/assets/backgrounds/camp.jpg');
     this.load.image('bg_desert', '/assets/backgrounds/desert.jpg');
-
-    // Generate arena background (keep the generated one as fallback)
-    const arenaSprite = PixelArtGenerator.createStreetArena(800, 600);
-    this.textures.addBase64('arena_street', arenaSprite);
   }
 
   create() {

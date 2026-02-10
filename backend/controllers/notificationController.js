@@ -1,4 +1,3 @@
-const Notification = require('../models/Notification');
 const CustomError = require('../errors');
 
 module.exports = (notificationModel) => ({

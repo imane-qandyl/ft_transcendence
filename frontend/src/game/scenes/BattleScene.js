@@ -62,7 +62,7 @@ export default class BattleScene extends Phaser.Scene {
     const height = this.cameras.main.height;
 
     // Available backgrounds - select based on matchId so both players see the same one
-    const backgrounds = ['bg_mountains', 'bg_camp', 'bg_desert', 'arena_street'];
+    const backgrounds = ['bg_mountains', 'bg_camp', 'bg_desert'];
     
     // Use matchId as seed for consistent background selection between players
     // Convert matchId to a number by summing character codes

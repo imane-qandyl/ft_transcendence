@@ -302,18 +302,6 @@ module.exports = async function(fastify, options) {
         is_active: true // New character becomes active
       }).returning('*');
 
-      // Create empty equipment slots
-      const slots = ['head', 'body', 'weapon', 'shield', 'boots', 'accessory'];
-      await Promise.all(
-        slots.map(slot =>
-          db('character_equipment').insert({
-            character_id: character.id,
-            slot,
-            item_id: null
-          })
-        )
-      );
-
       return reply.send({
         message: 'Character created successfully',
         character: {
@@ -378,15 +366,9 @@ module.exports = async function(fastify, options) {
         });
       }
 
-      // Get equipped items
-      const equipment = await db('character_equipment')
-        .join('items', 'character_equipment.item_id', 'items.id')
-        .where('character_equipment.character_id', character.id)
-        .select('character_equipment.slot', 'items.*');
-
-      // Calculate total stats with equipment
+      // Calculate total stats
       const combatService = require('../services/combatService');
-      const totalStats = combatService.calculateTotalStats(character, equipment);
+      const totalStats = combatService.calculateTotalStats(character);
 
       return reply.send({
         character: {
@@ -413,11 +395,7 @@ module.exports = async function(fastify, options) {
             sprite_hair: character.sprite_hair,
             sprite_outfit: character.sprite_outfit,
             selected_character: character.selected_character
-          },
-          equipment: equipment.reduce((acc, item) => {
-            acc[item.slot] = item;
-            return acc;
-          }, {})
+          }
         }
       });
 
@@ -470,163 +448,6 @@ module.exports = async function(fastify, options) {
       fastify.log.error('Update character error:', error);
       return reply.code(500).send({
         error: 'Failed to update character'
-      });
-    }
-  });
-
-  /**
-   * Get character inventory
-   * GET /api/v1/characters/me/inventory
-   */
-  fastify.get('/me/inventory', {
-    preHandler: [fastify.authenticate]
-  }, async (request, reply) => {
-    const userId = request.user.id;
-
-    try {
-      const character = await db('characters')
-        .where('user_id', userId)
-        .first();
-
-      if (!character) {
-        return reply.code(404).send({
-          error: 'No character found'
-        });
-      }
-
-      const inventory = await db('character_inventory')
-        .join('items', 'character_inventory.item_id', 'items.id')
-        .where('character_inventory.character_id', character.id)
-        .select('items.*', 'character_inventory.quantity');
-
-      return reply.send({
-        inventory
-      });
-
-    } catch (error) {
-      fastify.log.error('Get inventory error:', error);
-      return reply.code(500).send({
-        error: 'Failed to get inventory'
-      });
-    }
-  });
-
-  /**
-   * Equip an item
-   * POST /api/v1/characters/me/equip/:itemId
-   */
-  fastify.post('/me/equip/:itemId', {
-    preHandler: [fastify.authenticate]
-  }, async (request, reply) => {
-    const userId = request.user.id;
-    const { itemId } = request.params;
-
-    try {
-      const character = await db('characters')
-        .where('user_id', userId)
-        .first();
-
-      if (!character) {
-        return reply.code(404).send({
-          error: 'No character found'
-        });
-      }
-
-      // Check if item exists in inventory
-      const inventoryItem = await db('character_inventory')
-        .where({
-          character_id: character.id,
-          item_id: itemId
-        })
-        .first();
-
-      if (!inventoryItem) {
-        return reply.code(400).send({
-          error: 'Item not in inventory'
-        });
-      }
-
-      // Get item details
-      const item = await db('items').where('id', itemId).first();
-
-      if (!item) {
-        return reply.code(404).send({
-          error: 'Item not found'
-        });
-      }
-
-      // Check level requirement
-      if (item.level_required > character.level) {
-        return reply.code(400).send({
-          error: `You need to be level ${item.level_required} to equip this item`
-        });
-      }
-
-      // Equip item (replace any existing item in that slot)
-      await db('character_equipment')
-        .where({
-          character_id: character.id,
-          slot: item.slot
-        })
-        .update({
-          item_id: itemId
-        });
-
-      return reply.send({
-        message: 'Item equipped successfully',
-        item: {
-          name: item.name,
-          slot: item.slot
-        }
-      });
-
-    } catch (error) {
-      fastify.log.error('Equip item error:', error);
-      return reply.code(500).send({
-        error: 'Failed to equip item'
-      });
-    }
-  });
-
-  /**
-   * Unequip an item
-   * DELETE /api/v1/characters/me/equip/:slot
-   */
-  fastify.delete('/me/equip/:slot', {
-    preHandler: [fastify.authenticate]
-  }, async (request, reply) => {
-    const userId = request.user.id;
-    const { slot } = request.params;
-
-    try {
-      const character = await db('characters')
-        .where('user_id', userId)
-        .first();
-
-      if (!character) {
-        return reply.code(404).send({
-          error: 'No character found'
-        });
-      }
-
-      // Unequip item
-      await db('character_equipment')
-        .where({
-          character_id: character.id,
-          slot
-        })
-        .update({
-          item_id: null
-        });
-
-      return reply.send({
-        message: 'Item unequipped successfully'
-      });
-
-    } catch (error) {
-      fastify.log.error('Unequip item error:', error);
-      return reply.code(500).send({
-        error: 'Failed to unequip item'
       });
     }
   });

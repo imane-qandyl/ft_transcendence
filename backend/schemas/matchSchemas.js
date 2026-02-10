@@ -6,7 +6,7 @@ const createMatchSchema = {
             player2_id: { type: 'integer' },
             game_type: { 
                 type: 'string',
-                enum: ['classic', 'tournament', 'ranked'],
+                enum: ['classic', 'ranked'],
                 default: 'classic'
             }
         }
