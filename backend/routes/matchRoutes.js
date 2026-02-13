@@ -62,6 +62,7 @@ async function matchRoutes(fastify, options) {
 
     // GET /api/v1/matches - Get user's matches
     fastify.get('/', {
+        schema: getMatchesSchema,
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         try {
@@ -94,11 +95,26 @@ async function matchRoutes(fastify, options) {
 
     // PUT /api/v1/matches/:matchId - Update match result
     fastify.put('/:matchId', {
+        schema: updateMatchSchema,
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const { matchId } = request.params;
+            const matchId = parseInt(request.params.matchId, 10);
+            if (isNaN(matchId) || matchId < 1) {
+                return reply.code(400).send({ success: false, message: 'Invalid match ID' });
+            }
+
             const { winner_id, player1_score, player2_score, status = 'completed' } = request.body;
+            const userId = request.user.id;
+
+            // Authorization: verify user is a participant in this match
+            const match = await db('matches').where('id', matchId).first();
+            if (!match) {
+                return reply.code(404).send({ success: false, message: 'Match not found' });
+            }
+            if (match.player1_id !== userId && match.player2_id !== userId) {
+                return reply.code(403).send({ success: false, message: 'You are not a participant in this match' });
+            }
 
             await db('matches')
                 .where('id', matchId)
@@ -125,10 +141,25 @@ async function matchRoutes(fastify, options) {
 
     //DELETE /api/v1/matches/:matchId - Delete a match
     fastify.delete('/:matchId', {
+        schema: getMatchSchema,
         preHandler: [fastify.authenticate]
     }, async (request, reply) => {
         try {
-            const { matchId } = request.params;
+            const matchId = parseInt(request.params.matchId, 10);
+            if (isNaN(matchId) || matchId < 1) {
+                return reply.code(400).send({ success: false, message: 'Invalid match ID' });
+            }
+
+            const userId = request.user.id;
+
+            // Authorization: verify user is a participant
+            const match = await db('matches').where('id', matchId).first();
+            if (!match) {
+                return reply.code(404).send({ success: false, message: 'Match not found' });
+            }
+            if (match.player1_id !== userId && match.player2_id !== userId) {
+                return reply.code(403).send({ success: false, message: 'You are not a participant in this match' });
+            }
 
             await db('matches')
                 .where('id', matchId)

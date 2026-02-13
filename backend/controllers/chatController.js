@@ -1,4 +1,5 @@
 const CustomError = require('../errors');
+const { escapeHtml } = require('../utils/sanitize');
 
 module.exports = (chatModel) => ({
   createChat: async (request, reply) => {
@@ -27,7 +28,7 @@ module.exports = (chatModel) => ({
       }
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to create chat', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to create chat' });
     }
   },
 
@@ -43,7 +44,7 @@ module.exports = (chatModel) => ({
       return reply.send({ success: true, chats: chats });
     } catch (error) {
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to fetch chats', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to fetch chats' });
     }
   },
 
@@ -123,10 +124,25 @@ module.exports = (chatModel) => ({
         return reply.code(400).send({ success: false, message: 'content is required' });
       }
 
+      const trimmedContent = content.trim();
+      if (trimmedContent.length === 0) {
+        return reply.code(400).send({ success: false, message: 'content cannot be empty' });
+      }
+      if (trimmedContent.length > 5000) {
+        return reply.code(400).send({ success: false, message: 'content must not exceed 5000 characters' });
+      }
+
+      const sanitizedContent = escapeHtml(trimmedContent);
+
+      const parsedChatId = parseInt(chatId, 10);
+      if (isNaN(parsedChatId) || parsedChatId < 1) {
+        return reply.code(400).send({ success: false, message: 'Invalid chatId' });
+      }
+
       const { message, receiverUserId, isSenderBlocked } = await chatModel.createMessage(
         senderId,
-        parseInt(chatId, 10),
-        content
+        parsedChatId,
+        sanitizedContent
       );
 
       return reply.code(201).send({ success: true, message, receiverUserId, isSenderBlocked });
@@ -136,7 +152,7 @@ module.exports = (chatModel) => ({
       }
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to send message', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to send message' });
     }
   },
 
@@ -165,7 +181,7 @@ module.exports = (chatModel) => ({
       }
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to fetch messages', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to fetch messages' });
     }
   },
 
@@ -191,7 +207,7 @@ module.exports = (chatModel) => ({
       }
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to mark messages as read', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to mark messages as read' });
     }
   }
 });

@@ -96,9 +96,29 @@ const start = async () => {
 		// Register Socket.io for real-time game communication
 		await registerSocketIO(fastify);
 
+		// Prevent Fastify from processing Socket.io requests
+		// Socket.io attaches to the raw HTTP server and handles /socket.io/ paths.
+		// Without this, Fastify also processes these requests and sends a 404,
+		// which corrupts the WebSocket frames ("Invalid frame header").
+		fastify.addHook('onRequest', (request, reply, done) => {
+			if (request.url.startsWith('/socket.io')) {
+				reply.hijack();
+				return;
+			}
+			done();
+		});
+
 		// Add global error handler
 		fastify.setErrorHandler(globalErrorHandler);
 		fastify.setNotFoundHandler(notFoundHandler);
+
+		// Add security headers to all responses
+		fastify.addHook('onSend', async (request, reply) => {
+			reply.header('X-Content-Type-Options', 'nosniff');
+			reply.header('X-Frame-Options', 'DENY');
+			reply.header('X-XSS-Protection', '0'); // Disable legacy XSS auditor (can cause issues); rely on CSP instead
+			reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+		});
 
 		// Add authenticate decorator using our middleware
 		fastify.decorate('authenticate', authenticate);
@@ -168,8 +188,12 @@ const start = async () => {
 			db: db,
 		});
 
-		// Register WebSocket chat routes
-		fastify.register(wsChatRoutes);
+		// Register WebSocket chat plugin in an encapsulated context
+		// This prevents @fastify/websocket from intercepting Socket.io upgrade requests
+		fastify.register(async function wsPlugin(instance) {
+			await instance.register(require('@fastify/websocket'));
+			await instance.register(wsChatRoutes, { db: db });
+		});
 
 		// Register character routes
 		fastify.register(characterRoutes, {

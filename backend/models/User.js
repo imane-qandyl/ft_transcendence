@@ -3,6 +3,7 @@ const CustomError = require("../errors");
 const speakeasy = require("speakeasy"); // For TOTP 2FA
 const qrcode = require("qrcode"); // For QR code generation
 const db = require('../db'); // Import knex instance
+const { escapeHtml, sanitizeUrl } = require('../utils/sanitize');
 
 class User {
     constructor(dbInstance) {
@@ -17,8 +18,10 @@ class User {
             throw new CustomError.BadRequestError("Email already in use");
         }
 
+        const sanitizedUsername = escapeHtml(username);
+
         const userUsernameExists = await this.db("users")
-            .where({ username })
+            .where({ username: sanitizedUsername })
             .first();
         if (userUsernameExists) {
             throw new CustomError.BadRequestError("Username already in use");
@@ -29,12 +32,12 @@ class User {
 
         const [{ id }] = await this.db("users")
             .insert({
-                username,
+                username: sanitizedUsername,
                 email,
                 password_hash: hashedPassword,
             })
             .returning("id"); // SQLite returns id automatically
-        return { id, username, email };
+        return { id, username: sanitizedUsername, email };
     }
 
     async loginUser(emailOrUsername, password) {
@@ -129,11 +132,14 @@ class User {
             }
 
             // Create new user
+            const rawUsername = googleProfile.displayName || googleProfile.emails[0].value.split('@')[0];
+            const rawAvatarUrl = googleProfile.photos && googleProfile.photos[0] ? googleProfile.photos[0].value : null;
+
             const insertData = {
-                username: googleProfile.displayName || googleProfile.emails[0].value.split('@')[0],
+                username: escapeHtml(rawUsername),
                 email: googleProfile.emails[0].value,
                 google_id: googleProfile.id,
-                avatar_url: googleProfile.photos && googleProfile.photos[0] ? googleProfile.photos[0].value : null,
+                avatar_url: sanitizeUrl(rawAvatarUrl),
                 created_at: new Date(),
                 updated_at: new Date()
             };
@@ -173,11 +179,43 @@ class User {
 
     async updateUser(request, reply) {
         try {
+            const allowedFields = ['username', 'avatar_url', 'bio'];
+            const updateData = {};
+            for (const field of allowedFields) {
+                if (request.body.hasOwnProperty(field)) {
+                    updateData[field] = request.body[field];
+                }
+            }
+            if (Object.keys(updateData).length === 0) {
+                return reply.code(400).send({ error: 'No valid fields to update' });
+            }
+
+            // Sanitize text fields to prevent stored XSS
+            if (updateData.username) {
+                updateData.username = escapeHtml(updateData.username);
+            }
+            if (updateData.bio) {
+                updateData.bio = escapeHtml(updateData.bio);
+            }
+            if (updateData.avatar_url) {
+                const safeUrl = sanitizeUrl(updateData.avatar_url);
+                if (!safeUrl) {
+                    return reply.code(400).send({ error: 'Invalid avatar URL: only http, https, and data:image/ URLs are allowed' });
+                }
+                updateData.avatar_url = safeUrl;
+            }
+
+            updateData.updated_at = new Date();
             const updatedUser = await this.db("users")
                 .where({ id: request.params.id })
-                .update(request.body)
+                .update(updateData)
                 .returning("*");
-            reply.send(updatedUser);
+            if (updatedUser && updatedUser[0]) {
+                const { password_hash, twofa_secret, ...safeUser } = updatedUser[0];
+                reply.send(safeUser);
+            } else {
+                reply.send(updatedUser);
+            }
         }
         catch (error) {
             reply.code(500).send({ error: 'Failed to update user' });
@@ -188,6 +226,7 @@ class User {
         const userId = request.params.id;
         const user = await this.db("users")
             .where({ id: userId })
+            .select('id', 'username', 'email', 'avatar_url', 'bio', 'twofa_enabled', 'created_at', 'updated_at')
             .first();
         if (!user)
             throw new CustomError.NotFoundError("User not found");
@@ -200,8 +239,11 @@ class User {
             return [];
         }
 
+        // Escape LIKE wildcards to prevent wildcard injection
+        const sanitizedQuery = query.replace(/[%_\\]/g, '\\$&');
+
         let queryBuilder = this.db("users")
-            .where('username', 'like', `%${query}%`)
+            .where('username', 'like', `%${sanitizedQuery}%`)
             .select('id', 'username')
             .limit(10);
 
@@ -247,7 +289,7 @@ class User {
     async createGoogleUser({ googleId, email, username }) {
         try {
             const userData = {
-                username,
+                username: escapeHtml(username),
                 email,
                 google_id: googleId,
                 created_at: new Date(),
@@ -255,7 +297,7 @@ class User {
             };
 
             const [newUserId] = await this.db("users").insert(userData);
-            return { id: newUserId, username, email, google_id: googleId };
+            return { id: newUserId, username: escapeHtml(username), email, google_id: googleId };
         } catch (error) {
             console.error("Error creating Google user:", error);
             throw error;

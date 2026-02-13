@@ -6,25 +6,96 @@ async function authRoutes(fastify, options) {
     const { loginHandler, googleAuthHandler, refreshTokenHandler } = require("../controllers/authController");
 
 	// Basic auth endpoints
-	fastify.post("/register", register);
-	fastify.post("/login", login);
+	fastify.post("/register", {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['username', 'email', 'password'],
+				properties: {
+					username: { type: 'string', minLength: 3, maxLength: 30, pattern: '^[a-zA-Z0-9_]+$' },
+					email: { type: 'string', format: 'email', maxLength: 255 },
+					password: { type: 'string', minLength: 8, maxLength: 128 }
+				},
+				additionalProperties: false
+			}
+		}
+	}, register);
+	fastify.post("/login", {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['password'],
+				properties: {
+					email: { type: 'string', format: 'email', maxLength: 255 },
+					username: { type: 'string', maxLength: 30 },
+					password: { type: 'string', minLength: 1, maxLength: 128 },
+					twoFactorToken: { type: 'string', pattern: '^[0-9]{6}$' }
+				}
+			}
+		}
+	}, login);
 	
 	// Advanced auth endpoints with proper JWT handling
-	fastify.post("/login-jwt", async (request, reply) => {
+	fastify.post("/login-jwt", {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['password'],
+				properties: {
+					email: { type: 'string', format: 'email', maxLength: 255 },
+					username: { type: 'string', maxLength: 30 },
+					password: { type: 'string', minLength: 1, maxLength: 128 },
+					deviceId: { type: 'string', maxLength: 255 }
+				}
+			}
+		}
+	}, async (request, reply) => {
 		await loginHandler(fastify, request, reply);
 	});
 
-	fastify.post("/google", async (request, reply) => {
+	fastify.post("/google", {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['token', 'deviceId'],
+				properties: {
+					token: { type: 'string', minLength: 1, maxLength: 4096 },
+					deviceId: { type: 'string', minLength: 1, maxLength: 255 }
+				},
+				additionalProperties: false
+			}
+		}
+	}, async (request, reply) => {
 		await googleAuthHandler(fastify, request, reply);
 	});
 	
 	// Refresh token endpoint
-	fastify.post("/refresh", async (request, reply) => {
+	fastify.post("/refresh", {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['refreshToken', 'deviceId'],
+				properties: {
+					refreshToken: { type: 'string', minLength: 1, maxLength: 4096 },
+					deviceId: { type: 'string', minLength: 1, maxLength: 255 }
+				},
+				additionalProperties: false
+			}
+		}
+	}, async (request, reply) => {
 		await refreshTokenHandler(fastify, request, reply);
 	});
 	
 	// Logout endpoint
 	fastify.post("/logout", {
+		schema: {
+			body: {
+				type: 'object',
+				properties: {
+					deviceId: { type: 'string', maxLength: 255 }
+				}
+			}
+		},
 		preHandler: [fastify.authenticate]
 	}, async (request, reply) => {
 		const { deviceId } = request.body;
@@ -98,6 +169,16 @@ async function authRoutes(fastify, options) {
 	});
 
 	fastify.post("/2fa/verify", {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['token'],
+				properties: {
+					token: { type: 'string', pattern: '^[0-9]{6}$' }
+				},
+				additionalProperties: false
+			}
+		},
 		preHandler: [fastify.authenticate]
 	}, async (request, reply) => {
 		try {
@@ -126,6 +207,16 @@ async function authRoutes(fastify, options) {
 	});
 
 	fastify.post("/2fa/disable", {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['token'],
+				properties: {
+					token: { type: 'string', pattern: '^[0-9]{6}$' }
+				},
+				additionalProperties: false
+			}
+		},
 		preHandler: [fastify.authenticate]
 	}, async (request, reply) => {
 		try {

@@ -1,12 +1,13 @@
 /**
- * FriendsPanel - Pixel art style friends list and chat
+ * FriendsPanel - Pixel art style friends list and chat with WebSocket support
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import api from '../services/api';
 import friendService from '../services/friendService';
 import { useAuth } from '../contexts/AuthContext';
+import { useWebSocketChat } from '../hooks/useWebSocketChat';
 
 const FriendsPanel = ({ onClose }) => {
   const { user } = useAuth();
@@ -26,7 +27,21 @@ const FriendsPanel = ({ onClose }) => {
   const [currentChatId, setCurrentChatId] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
 
+  // Memoized callback for receiving WebSocket messages
+  const handleWebSocketMessage = useCallback(
+    (newMsg) => setMessages(prev => [...prev, newMsg]),
+    []
+  );
+
+  // WebSocket hook for real-time messaging
+  const { sendMessage: sendWebSocketMessage, setCurrentChat, clearCurrentChat, wsRef, wsConnectedRef, currentChatIdRef } = useWebSocketChat(
+    handleWebSocketMessage
+  );
+
+  // Initialize friends and data fetching
   useEffect(() => {
+    console.log('[FriendsPanel] Component rendered, user:', user?.id);
+    
     // Add small delay to prevent initial rate limiting burst
     const initTimer = setTimeout(() => {
       fetchFriends();
@@ -34,12 +49,12 @@ const FriendsPanel = ({ onClose }) => {
       fetchBlockedUsers();
     }, 100);
     
-    // Poll for new friends every 30 seconds (reduced from 10)
+    // Poll for new friends every 30 seconds
     const friendsInterval = setInterval(() => {
       fetchFriends();
     }, 30000);
     
-    // Poll for new friend requests every 30 seconds (reduced from 10)
+    // Poll for new friend requests every 30 seconds
     const requestsInterval = setInterval(() => {
       fetchFriendRequests();
     }, 30000);
@@ -52,45 +67,39 @@ const FriendsPanel = ({ onClose }) => {
     };
   }, []);
 
+  // Load messages when friend is selected
   useEffect(() => {
     if (selectedFriend) {
-      // Backend returns userId, not id
       const friendId = selectedFriend.userId || selectedFriend.id;
       
-      // Use flushSync to force immediate rendering of loading state
       flushSync(() => {
         setMessagesLoading(true);
         setMessages([]);
       });
       
-      // Then fetch messages
       fetchMessages(friendId);
       
-      // Poll for new messages every 15 seconds while viewing chat (reduced from 5)
+      // Poll for new messages every 15 seconds while viewing chat as fallback
       const messagesInterval = setInterval(() => {
         fetchMessages(friendId);
       }, 15000);
       
-      // Cleanup when friend is deselected
       return () => {
         clearInterval(messagesInterval);
       };
+    } else {
+      // Clear chat when friend is deselected
+      clearCurrentChat();
+      setCurrentChatId(null);
     }
-    
-    // Cleanup when friend is deselected
-    return () => {
-      // No polling to clean up if no friend selected
-    };
-  }, [selectedFriend]);
+  }, [selectedFriend, clearCurrentChat]);
 
   const fetchFriends = async (retryCount = 0) => {
     try {
       const response = await api.get('friends/');
-      // API returns { success: true, data: [...] }
       const friendsData = response.data.data || [];
       setFriends(friendsData);
       
-      // Build unread counts map from friends data
       const unreadMap = {};
       friendsData.forEach(friend => {
         const friendId = friend.userId || friend.id;
@@ -99,7 +108,6 @@ const FriendsPanel = ({ onClose }) => {
       setUnreadCounts(unreadMap);
     } catch (err) {
       if (err.response?.status === 429 && retryCount < 2) {
-        // Rate limited - wait and retry with exponential backoff
         const delay = Math.pow(2, retryCount) * 1000 + Math.random() * 1000;
         setTimeout(() => fetchFriends(retryCount + 1), delay);
         return;
@@ -113,11 +121,9 @@ const FriendsPanel = ({ onClose }) => {
   const fetchFriendRequests = async (retryCount = 0) => {
     try {
       const response = await api.get('friends/requests/received');
-      // API returns { success: true, data: [...] }
       setFriendRequests(response.data.data || []);
     } catch (err) {
       if (err.response?.status === 429 && retryCount < 2) {
-        // Rate limited - wait and retry with exponential backoff
         const delay = Math.pow(2, retryCount) * 1000 + Math.random() * 1000;
         setTimeout(() => fetchFriendRequests(retryCount + 1), delay);
         return;
@@ -139,49 +145,35 @@ const FriendsPanel = ({ onClose }) => {
   const fetchMessages = async (friendId) => {
     try {
       try {
-        // Get chat between current user and friend
         const response = await api.get(`chats/between/${friendId}`);
-        
-        // Response format: { success: true, chat_id: 1 }
         const chatId = response.data.chat_id || response.data.chat?.id;
         
         if (chatId) {
+          currentChatIdRef.current = chatId;
           setCurrentChatId(chatId);
           
-          // Mark messages as read immediately
           try {
             await api.put(`chats/${chatId}/read`, {});
           } catch (readErr) {
-            // Failed to mark messages as read - continue silently
+            // Silent fail
           }
           
-          // Fetch messages immediately
           const messagesResponse = await api.get(`chats/${chatId}/messages`);
           const msgs = messagesResponse.data.data || messagesResponse.data.messages || [];
           
-          // Only update if we have messages, don't clear if empty
           if (msgs && msgs.length > 0) {
             setMessages(msgs);
           } else if (messages.length === 0) {
-            // Only set empty array if we previously had no messages
             setMessages([]);
           }
-          // If we have existing messages but fetch returns empty, keep existing messages
           
           setMessagesLoading(false);
           
-          // Clear unread count for this friend
           setUnreadCounts(prev => ({
             ...prev,
             [friendId]: 0
           }));
-          
-          // ❌ REMOVED: Polling is deprecated - use WebSocket (Chat.js) for real-time updates
-          // FriendsPanel should not continuously poll. This was causing excessive API calls.
-          // Real-time message updates are handled by the dedicated Chat page with WebSocket support.
         } else {
-          // No chatId in response, no messages to load yet
-          // Only clear if this is the first time
           if (messages.length > 0) {
             setMessages([]);
           }
@@ -189,8 +181,6 @@ const FriendsPanel = ({ onClose }) => {
         }
       } catch (err) {
         if (err.response?.status === 404) {
-          // No chat exists yet with this friend. Messages will be loaded after first message is sent.
-          // Only clear on 404 if we had no previous messages
           if (messages.length === 0) {
             setMessages([]);
           }
@@ -201,8 +191,6 @@ const FriendsPanel = ({ onClose }) => {
       }
     } catch (err) {
       console.error('Failed to fetch messages:', err);
-      // Only clear messages on actual errors, not on network timeouts or retries
-      // Don't set loading to false if there was an error during polling
       if (messagesLoading) {
         setMessages([]);
         setMessagesLoading(false);
@@ -215,29 +203,55 @@ const FriendsPanel = ({ onClose }) => {
       e.preventDefault();
     }
     
-    if (!newMessage.trim()) {
+    const trimmedMessage = newMessage.trim();
+    if (!trimmedMessage || !selectedFriend) {
       return;
     }
 
-    if (!selectedFriend) {
+    if (trimmedMessage.length > 5000) {
       return;
     }
+
+    const friendId = selectedFriend.userId || selectedFriend.id;
+    let chatId = null;
 
     try {
-      
-      // Backend returns userId, not id
-      const friendId = selectedFriend.userId || selectedFriend.id;
-      
-      let chatId = null;
+      // Try WebSocket first if connected
+      if (wsConnectedRef.current && wsRef.current?.readyState === 1) {
+        
+        try {
+          const chatResponse = await api.get(`chats/between/${friendId}`);
+          chatId = chatResponse.data.chat_id || chatResponse.data.chat?.id;
+        } catch (err) {
+          if (err.response?.status === 404) {
+            try {
+              const createResponse = await api.post('chats/', { user2_id: friendId });
+              chatId = createResponse.data.chat_id || createResponse.data.chat?.id;
+            } catch (createErr) {
+              alert('Failed to create chat');
+              return;
+            }
+          } else {
+            throw err;
+          }
+        }
+
+        if (chatId) {
+          setCurrentChat(chatId);
+          const sent = sendWebSocketMessage(chatId, newMessage);
+          if (sent) {
+            setNewMessage('');
+            return;
+          }
+        }
+      }
+
+      // Fall back to REST
       
       try {
-        // Try to get existing chat
         const chatResponse = await api.get(`chats/between/${friendId}`);
-        
-        // Response format: { success: true, chat_id: 1 }
         chatId = chatResponse.data.chat_id || chatResponse.data.chat?.id;
       } catch (err) {
-        // If chat doesn't exist (404), create one
         if (err.response?.status === 404) {
           try {
             const createResponse = await api.post('chats/', { user2_id: friendId });
@@ -261,15 +275,13 @@ const FriendsPanel = ({ onClose }) => {
         return;
       }
       
-      // Send message to the chat
-      const sendResponse = await api.post(`chats/${chatId}/messages`, { content: newMessage });
+      setCurrentChat(chatId);
+      await api.post(`chats/${chatId}/messages`, { content: newMessage });
       
-      // Refresh messages from server immediately after sending
       try {
         const refreshedMessages = await api.get(`chats/${chatId}/messages`);
         setMessages(refreshedMessages.data.data || refreshedMessages.data.messages || []);
       } catch (refreshErr) {
-        // Fallback: add message to local state
         const newMsg = {
           id: Date.now(),
           content: newMessage,
@@ -307,7 +319,6 @@ const FriendsPanel = ({ onClose }) => {
 
   const sendFriendRequest = async (userId) => {
     try {
-      // Correct endpoint: POST /api/v1/friends/requests with receiverId in body
       await api.post('friends/requests', { receiverId: userId });
       setSearchResults(prev => prev.filter(u => u.id !== userId));
       setMessage('Friend request sent successfully!');
@@ -320,7 +331,6 @@ const FriendsPanel = ({ onClose }) => {
 
   const acceptRequest = async (friendshipId) => {
     try {
-      // Correct endpoint: PUT /api/v1/friends/requests/:friendshipId/respond
       await api.put(`friends/requests/${friendshipId}/respond`, { action: 'accept' });
       await fetchFriends();
       await fetchFriendRequests();
@@ -347,15 +357,11 @@ const FriendsPanel = ({ onClose }) => {
       
       await friendService.blockFriend(friendId);
       
-      // Clear selected friend if blocking the currently selected friend
       if (selectedFriend && (selectedFriend.userId || selectedFriend.id) === friendId) {
         setSelectedFriend(null);
       }
       
-      // Remove the blocked friend from the list
       setFriends(prev => prev.filter(f => (f.userId || f.id) !== friendId));
-      
-      // Refresh all data
       await fetchBlockedUsers();
       
     } catch (err) {
@@ -366,15 +372,8 @@ const FriendsPanel = ({ onClose }) => {
 
   const unblockFriend = async (friendId) => {
     try {
-      const blockedUser = blockedUsers.find(b => b.userId === friendId);
-      const userName = blockedUser?.username || 'User';
-      
       await friendService.unblockFriend(friendId);
-      
-      // Remove from blocked list
       setBlockedUsers(prev => prev.filter(b => b.userId !== friendId));
-      
-      // Refresh friends list in case they should appear there
       await fetchFriends();
       
     } catch (err) {
@@ -417,7 +416,6 @@ const FriendsPanel = ({ onClose }) => {
           ) : (
             <div className="flex flex-col space-y-2">
               {messages.map((msg) => {
-                // Use the is_own_message flag from the backend, fall back to checking sender_id
                 const isOwnMessage = msg.is_own_message !== undefined ? msg.is_own_message : (msg.sender_id === user?.id);
                 
                 return (
@@ -457,6 +455,7 @@ const FriendsPanel = ({ onClose }) => {
                 }
               }}
               placeholder="TYPE..."
+              maxLength={5000}
               className="pixel-input flex-1 text-[8px] w-full"
             />
             <button
@@ -511,7 +510,7 @@ const FriendsPanel = ({ onClose }) => {
 
           {/* Mobile Content */}
           <div className="flex-1 overflow-auto">
-            {/* Mobile Tab Content - Same as desktop but optimized for touch */}
+            {/* Friends Tab */}
             {activeTab === 'friends' && (
               <div className="p-2">
                 {loading ? (
@@ -567,7 +566,7 @@ const FriendsPanel = ({ onClose }) => {
               </div>
             )}
 
-            {/* Other tabs - Add Friends */}
+            {/* Add Friends Tab */}
             {activeTab === 'add' && (
               <div className="p-4">
                 <form onSubmit={(e) => { e.preventDefault(); searchUsers(searchQuery); }} className="flex gap-2 mb-4">
@@ -576,6 +575,7 @@ const FriendsPanel = ({ onClose }) => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="ENTER USERNAME..."
+                    maxLength={100}
                     className="pixel-input text-sm flex-1"
                   />
                   <button
@@ -594,13 +594,13 @@ const FriendsPanel = ({ onClose }) => {
                 )}
 
                 <div className="space-y-2">
-                  {searchResults.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 border-3 border-pixel-mid bg-pixel-mid">
+                  {searchResults.map((u) => (
+                    <div key={u.id} className="flex items-center justify-between p-3 border-3 border-pixel-mid bg-pixel-mid">
                       <span className="text-pixel-white text-sm truncate">
-                        {user.username?.toUpperCase()}
+                        {u.username?.toUpperCase()}
                       </span>
                       <button
-                        onClick={() => sendFriendRequest(user.id)}
+                        onClick={() => sendFriendRequest(u.id)}
                         className="px-3 py-1 bg-retro-purple border-3 border-retro-purple text-pixel-black text-sm"
                       >
                         ADD
@@ -611,7 +611,7 @@ const FriendsPanel = ({ onClose }) => {
               </div>
             )}
 
-            {/* Other tabs - Requests */}
+            {/* Requests Tab */}
             {activeTab === 'requests' && (
               <div className="p-4 space-y-2">
                 {friendRequests.length === 0 ? (
@@ -644,7 +644,7 @@ const FriendsPanel = ({ onClose }) => {
               </div>
             )}
 
-            {/* Other tabs - Blocked */}
+            {/* Blocked Tab */}
             {activeTab === 'blocked' && (
               <div className="p-4">
                 {blockedUsers.length === 0 ? (
@@ -698,160 +698,161 @@ const FriendsPanel = ({ onClose }) => {
               }`}
             >
               {tab === 'requests' && friendRequests.length > 0 && (
-              <span className="text-retro-red mr-1">({friendRequests.length})</span>
-            )}
-            {tab === 'blocked' && blockedUsers.length > 0 && (
-              <span className="text-retro-red mr-1">({blockedUsers.length})</span>
-            )}
-            {tab}
-          </button>
-        ))}
-      </div>
+                <span className="text-retro-red mr-1">({friendRequests.length})</span>
+              )}
+              {tab === 'blocked' && blockedUsers.length > 0 && (
+                <span className="text-retro-red mr-1">({blockedUsers.length})</span>
+              )}
+              {tab}
+            </button>
+          ))}
+        </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-        {/* Friends Tab */}
-        {activeTab === 'friends' && (
-          <div className="p-2">
-            {loading ? (
-              <div className="text-center text-pixel-mid text-xs py-4">LOADING...</div>
-            ) : friends.length === 0 ? (
-              <div className="text-center text-pixel-mid text-xs py-4">
-                <div className="mb-2">NO FRIENDS YET</div>
-                <button
-                  onClick={() => setActiveTab('add')}
-                  className="text-retro-purple hover:text-retro-pink"
-                >
-                  + ADD FRIENDS
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {/* Online */}
-                <div className="text-pixel-mid text-[8px] py-1">
-                  -- ONLINE ({friends.filter(f => f.status === 'online').length}) --
-                </div>
-                {friends.filter(f => f.status === 'online').map((friend, index) => (
-                  <FriendItem key={`online-${friend.userId || friend.id || friend.friendshipId}-${index}`} friend={friend} unreadCount={unreadCounts[friend.userId || friend.id]} onClick={() => setSelectedFriend(friend)} onBlock={blockFriend} />
-                ))}
-
-                {/* Offline */}
-                <div className="text-pixel-mid text-[8px] py-1 mt-2">
-                  -- OFFLINE ({friends.filter(f => f.status !== 'online').length}) --
-                </div>
-                {friends.filter(f => f.status !== 'online').map((friend, index) => (
-                  <FriendItem key={`offline-${friend.userId || friend.id || friend.friendshipId}-${index}`} friend={friend} unreadCount={unreadCounts[friend.userId || friend.id]} onClick={() => setSelectedFriend(friend)} onBlock={blockFriend} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Requests Tab */}
-        {activeTab === 'requests' && (
-          <div className="p-2 space-y-2">
-            {friendRequests.length === 0 ? (
-              <div className="text-center text-pixel-mid text-xs py-4">
-                NO PENDING REQUESTS
-              </div>
-            ) : (
-              friendRequests.map((req) => (
-                <div key={req.friendshipId} className="pixel-card p-2">
-                  <div className="text-pixel-white text-xs mb-2">
-                    {req.senderUsername?.toUpperCase() || req.username?.toUpperCase() || '???'}
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => acceptRequest(req.friendshipId)}
-                      className="flex-1 py-1 bg-retro-green border-3 border-retro-green text-pixel-black text-[8px]"
-                    >
-                      YES
-                    </button>
-                    <button
-                      onClick={() => declineRequest(req.friendshipId)}
-                      className="flex-1 py-1 bg-pixel-mid border-3 border-pixel-light text-pixel-light text-[8px]"
-                    >
-                      NO
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Add Friends Tab */}
-        {activeTab === 'add' && (
-          <div className="p-2">
-            <form onSubmit={(e) => { e.preventDefault(); searchUsers(searchQuery); }} className="flex gap-1 mb-2">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="USERNAME..."
-                className="pixel-input text-[8px] flex-1"
-              />
-              <button
-                type="submit"
-                disabled={searchLoading}
-                className="px-2 bg-retro-purple border-3 border-retro-purple text-pixel-black text-xs disabled:opacity-50"
-              >
-                {searchLoading ? '..' : '?'}
-              </button>
-            </form>
-
-            {searchQuery && !searchLoading && searchResults.length === 0 && (
-              <div className="text-pixel-mid text-xs text-center py-2">
-                NO USERS FOUND
-              </div>
-            )}
-
-            <div className="space-y-1">
-              {searchResults.map((user) => (
-                <div key={user.id} className="flex items-center justify-between pixel-card p-2">
-                  <span className="text-pixel-white text-xs truncate">
-                    {user.username?.toUpperCase()}
-                  </span>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+          {/* Friends Tab */}
+          {activeTab === 'friends' && (
+            <div className="p-2">
+              {loading ? (
+                <div className="text-center text-pixel-mid text-xs py-4">LOADING...</div>
+              ) : friends.length === 0 ? (
+                <div className="text-center text-pixel-mid text-xs py-4">
+                  <div className="mb-2">NO FRIENDS YET</div>
                   <button
-                    onClick={() => sendFriendRequest(user.id)}
-                    className="px-2 py-1 bg-retro-purple border-3 border-retro-purple text-pixel-black text-[8px]"
+                    onClick={() => setActiveTab('add')}
+                    className="text-retro-purple hover:text-retro-pink"
                   >
-                    ADD
+                    + ADD FRIENDS
                   </button>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              ) : (
+                <div className="space-y-1">
+                  {/* Online */}
+                  <div className="text-pixel-mid text-[8px] py-1">
+                    -- ONLINE ({friends.filter(f => f.status === 'online').length}) --
+                  </div>
+                  {friends.filter(f => f.status === 'online').map((friend, index) => (
+                    <FriendItem key={`online-${friend.userId || friend.id || friend.friendshipId}-${index}`} friend={friend} unreadCount={unreadCounts[friend.userId || friend.id]} onClick={() => setSelectedFriend(friend)} onBlock={blockFriend} />
+                  ))}
 
-        {/* Blocked Users Tab */}
-        {activeTab === 'blocked' && (
-          <div className="p-2">
-            {blockedUsers.length === 0 ? (
-              <div className="text-center text-pixel-mid text-xs py-4">
-                NO BLOCKED USERS
-              </div>
-            ) : (
+                  {/* Offline */}
+                  <div className="text-pixel-mid text-[8px] py-1 mt-2">
+                    -- OFFLINE ({friends.filter(f => f.status !== 'online').length}) --
+                  </div>
+                  {friends.filter(f => f.status !== 'online').map((friend, index) => (
+                    <FriendItem key={`offline-${friend.userId || friend.id || friend.friendshipId}-${index}`} friend={friend} unreadCount={unreadCounts[friend.userId || friend.id]} onClick={() => setSelectedFriend(friend)} onBlock={blockFriend} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Requests Tab */}
+          {activeTab === 'requests' && (
+            <div className="p-2 space-y-2">
+              {friendRequests.length === 0 ? (
+                <div className="text-center text-pixel-mid text-xs py-4">
+                  NO PENDING REQUESTS
+                </div>
+              ) : (
+                friendRequests.map((req) => (
+                  <div key={req.friendshipId} className="pixel-card p-2">
+                    <div className="text-pixel-white text-xs mb-2">
+                      {req.senderUsername?.toUpperCase() || req.username?.toUpperCase() || '???'}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => acceptRequest(req.friendshipId)}
+                        className="flex-1 py-1 bg-retro-green border-3 border-retro-green text-pixel-black text-[8px]"
+                      >
+                        YES
+                      </button>
+                      <button
+                        onClick={() => declineRequest(req.friendshipId)}
+                        className="flex-1 py-1 bg-pixel-mid border-3 border-pixel-light text-pixel-light text-[8px]"
+                      >
+                        NO
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Add Friends Tab */}
+          {activeTab === 'add' && (
+            <div className="p-2">
+              <form onSubmit={(e) => { e.preventDefault(); searchUsers(searchQuery); }} className="flex gap-1 mb-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="USERNAME..."
+                  maxLength={100}
+                  className="pixel-input text-[8px] flex-1"
+                />
+                <button
+                  type="submit"
+                  disabled={searchLoading}
+                  className="px-2 bg-retro-purple border-3 border-retro-purple text-pixel-black text-xs disabled:opacity-50"
+                >
+                  {searchLoading ? '..' : '?'}
+                </button>
+              </form>
+
+              {searchQuery && !searchLoading && searchResults.length === 0 && (
+                <div className="text-pixel-mid text-xs text-center py-2">
+                  NO USERS FOUND
+                </div>
+              )}
+
               <div className="space-y-1">
-                {blockedUsers.map((blockedUser) => (
-                  <div key={blockedUser.userId} className="flex items-center justify-between pixel-card p-2 bg-pixel-light border-3 border-retro-yellow">
-                    <span className="text-pixel-black text-xs truncate font-bold">
-                      {blockedUser.username?.toUpperCase()}
+                {searchResults.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between pixel-card p-2">
+                    <span className="text-pixel-white text-xs truncate">
+                      {u.username?.toUpperCase()}
                     </span>
                     <button
-                      onClick={() => unblockFriend(blockedUser.userId)}
-                      className="px-2 py-1 bg-retro-green border-3 border-retro-green text-pixel-black text-[8px]"
-                      title="Unblock user"
+                      onClick={() => sendFriendRequest(u.id)}
+                      className="px-2 py-1 bg-retro-purple border-3 border-retro-purple text-pixel-black text-[8px]"
                     >
-                      UNBLOCK
+                      ADD
                     </button>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+
+          {/* Blocked Users Tab */}
+          {activeTab === 'blocked' && (
+            <div className="p-2">
+              {blockedUsers.length === 0 ? (
+                <div className="text-center text-pixel-mid text-xs py-4">
+                  NO BLOCKED USERS
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {blockedUsers.map((blockedUser) => (
+                    <div key={blockedUser.userId} className="flex items-center justify-between pixel-card p-2 bg-pixel-light border-3 border-retro-yellow">
+                      <span className="text-pixel-black text-xs truncate font-bold">
+                        {blockedUser.username?.toUpperCase()}
+                      </span>
+                      <button
+                        onClick={() => unblockFriend(blockedUser.userId)}
+                        className="px-2 py-1 bg-retro-green border-3 border-retro-green text-pixel-black text-[8px]"
+                        title="Unblock user"
+                      >
+                        UNBLOCK
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

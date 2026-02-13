@@ -20,7 +20,9 @@ async function registerSocketIO(fastify) {
       methods: ['GET', 'POST']
     },
     transports: ['websocket', 'polling'],
-    allowEIO3: true
+    allowEIO3: true,
+    perMessageDeflate: false,
+    httpCompression: false
   });
 
   // Socket authentication middleware

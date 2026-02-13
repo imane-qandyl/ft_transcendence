@@ -1,3 +1,5 @@
+const { escapeHtml, sanitizeUrl } = require('../utils/sanitize');
+
 async function userRoutes(fastify, options) {
     const { userModel } = options;
 
@@ -62,6 +64,14 @@ async function userRoutes(fastify, options) {
 
     // Search users by username
     fastify.get("/search", {
+        schema: {
+            querystring: {
+                type: 'object',
+                properties: {
+                    q: { type: 'string', minLength: 1, maxLength: 100 }
+                }
+            }
+        },
         preHandler: fastify.authenticate
     }, async (request, reply) => {
         const { q } = request.query;
@@ -82,6 +92,24 @@ async function userRoutes(fastify, options) {
 
     // Update user profile (PUT /users/:id)
     fastify.put("/:id", {
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'integer', minimum: 1 }
+                }
+            },
+            body: {
+                type: 'object',
+                properties: {
+                    username: { type: 'string', minLength: 3, maxLength: 30, pattern: '^[a-zA-Z0-9_]+$' },
+                    avatar_url: { type: 'string', maxLength: 2000000, format: 'uri' },
+                    bio: { type: 'string', maxLength: 500 }
+                },
+                additionalProperties: false
+            }
+        },
         preHandler: fastify.authenticate
     }, async (request, reply) => {
         try {
@@ -111,6 +139,24 @@ async function userRoutes(fastify, options) {
                     error: 'Bad Request', 
                     message: 'No valid fields to update' 
                 });
+            }
+
+            // Sanitize text fields to prevent stored XSS
+            if (updateData.username) {
+                updateData.username = escapeHtml(updateData.username);
+            }
+            if (updateData.bio) {
+                updateData.bio = escapeHtml(updateData.bio);
+            }
+            if (updateData.avatar_url) {
+                const safeUrl = sanitizeUrl(updateData.avatar_url);
+                if (!safeUrl) {
+                    return reply.code(400).send({
+                        error: 'Bad Request',
+                        message: 'Invalid avatar URL: only http, https, and data:image/ URLs are allowed'
+                    });
+                }
+                updateData.avatar_url = safeUrl;
             }
 
             updateData.updated_at = new Date();

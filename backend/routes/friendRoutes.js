@@ -6,6 +6,16 @@ async function friendRoutes(fastify, options) {
 
   // Send a friend request
   fastify.post('/requests', {
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          receiverId: { type: 'integer', minimum: 1 },
+          receiver_id: { type: 'integer', minimum: 1 },
+          user2_email: { type: 'string', format: 'email', maxLength: 255 }
+        }
+      }
+    },
     preHandler: [fastify.authenticate]
   }, controller.sendRequest);
 
@@ -31,26 +41,99 @@ async function friendRoutes(fastify, options) {
 
   // Respond to a request (accept/decline)
   fastify.put('/requests/:friendshipId/respond', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['friendshipId'],
+        properties: {
+          friendshipId: { type: 'integer', minimum: 1 }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['action'],
+        properties: {
+          action: { type: 'string', enum: ['accept', 'decline'] }
+        },
+        additionalProperties: false
+      }
+    },
     preHandler: [fastify.authenticate]
   }, controller.respondRequest);
 
   // Respond to a request (accept/decline) - also support POST
   fastify.post('/requests/:friendshipId/respond', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['friendshipId'],
+        properties: {
+          friendshipId: { type: 'integer', minimum: 1 }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['action'],
+        properties: {
+          action: { type: 'string', enum: ['accept', 'decline'] }
+        },
+        additionalProperties: false
+      }
+    },
     preHandler: [fastify.authenticate]
   }, controller.respondRequest);
 
   // Cancel / unfriend
   fastify.delete('/friendships/:friendshipId', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['friendshipId'],
+        properties: {
+          friendshipId: { type: 'integer', minimum: 1 }
+        }
+      }
+    },
     preHandler: [fastify.authenticate]
   }, controller.abortFriendship);
 
   // Block a friend
   fastify.post('/:friendId/block', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['friendId'],
+        properties: {
+          friendId: { type: 'integer', minimum: 1 }
+        }
+      },
+      body: {
+        type: 'object',
+        properties: {
+          friendId: { type: 'integer', minimum: 1 }
+        }
+      }
+    },
     preHandler: [fastify.authenticate]
   }, controller.blockFriend);
 
   // Unblock a friend
   fastify.post('/:friendId/unblock', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['friendId'],
+        properties: {
+          friendId: { type: 'integer', minimum: 1 }
+        }
+      },
+      body: {
+        type: 'object',
+        properties: {
+          friendId: { type: 'integer', minimum: 1 }
+        }
+      }
+    },
     preHandler: [fastify.authenticate]
   }, controller.unblockFriend);
 }

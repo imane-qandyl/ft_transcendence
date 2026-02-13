@@ -175,13 +175,19 @@ const CharacterCreate = ({ onCharacterCreated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!name || name.length < 3) {
+    const trimmedName = name.trim();
+    if (!trimmedName || trimmedName.length < 3) {
       setError('Character name must be at least 3 characters');
       return;
     }
 
-    if (name.length > 50) {
+    if (trimmedName.length > 50) {
       setError('Character name must be less than 50 characters');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9 _-]+$/.test(trimmedName)) {
+      setError('Name can only contain letters, numbers, spaces, hyphens, and underscores');
       return;
     }
 
@@ -195,7 +201,7 @@ const CharacterCreate = ({ onCharacterCreated }) => {
         return;
       }
       const response = await api.post('characters', {
-        name,
+        name: trimmedName,
         sprite_body: selectedCharacter,
         sprite_hair: 'hair_short',
         sprite_outfit: 'outfit_basic',

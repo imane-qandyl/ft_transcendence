@@ -222,15 +222,23 @@ module.exports = async function(fastify, options) {
       }
 
       // Validate name
-      if (!name || name.length < 3 || name.length > 50) {
+      if (!name || name.trim().length < 3 || name.trim().length > 50) {
         return reply.code(400).send({
           error: 'Name must be between 3 and 50 characters'
         });
       }
 
+      // Sanitize name - allow only alphanumeric, spaces, hyphens, underscores
+      const sanitizedName = name.trim();
+      if (!/^[a-zA-Z0-9 _-]+$/.test(sanitizedName)) {
+        return reply.code(400).send({
+          error: 'Name can only contain letters, numbers, spaces, hyphens, and underscores'
+        });
+      }
+
       // Check if name is taken
       const nameTaken = await db('characters')
-        .where('name', name)
+        .where('name', sanitizedName)
         .first();
 
       if (nameTaken) {
@@ -279,7 +287,7 @@ module.exports = async function(fastify, options) {
       // selected_character is set to the chosen class and LOCKED until level 20
       const [character] = await db('characters').insert({
         user_id: userId,
-        name,
+        name: sanitizedName,
         level: 1,
         experience: 0,
         coins: 1000, // Starting coins
@@ -417,6 +425,11 @@ module.exports = async function(fastify, options) {
     const userId = request.user.id;
     const { sprite_body, sprite_hair, sprite_outfit } = request.body;
 
+    // Whitelist valid customization values
+    const VALID_BODIES = ['pink', 'owlet', 'dude', 'warrior', 'mage', 'rogue'];
+    const VALID_HAIRS = ['hair_short', 'hair_long', 'hair_mohawk', 'hair_none'];
+    const VALID_OUTFITS = ['outfit_basic', 'outfit_armor', 'outfit_robe', 'outfit_ninja'];
+
     try {
       const character = await db('characters')
         .where('user_id', userId)
@@ -429,9 +442,24 @@ module.exports = async function(fastify, options) {
       }
 
       const updates = {};
-      if (sprite_body) updates.sprite_body = sprite_body;
-      if (sprite_hair) updates.sprite_hair = sprite_hair;
-      if (sprite_outfit) updates.sprite_outfit = sprite_outfit;
+      if (sprite_body) {
+        if (!VALID_BODIES.includes(sprite_body)) {
+          return reply.code(400).send({ error: 'Invalid sprite_body value' });
+        }
+        updates.sprite_body = sprite_body;
+      }
+      if (sprite_hair) {
+        if (!VALID_HAIRS.includes(sprite_hair)) {
+          return reply.code(400).send({ error: 'Invalid sprite_hair value' });
+        }
+        updates.sprite_hair = sprite_hair;
+      }
+      if (sprite_outfit) {
+        if (!VALID_OUTFITS.includes(sprite_outfit)) {
+          return reply.code(400).send({ error: 'Invalid sprite_outfit value' });
+        }
+        updates.sprite_outfit = sprite_outfit;
+      }
 
       if (Object.keys(updates).length > 0) {
         await db('characters')

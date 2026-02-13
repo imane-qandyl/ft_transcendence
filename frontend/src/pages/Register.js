@@ -30,21 +30,52 @@ const Register = () => {
     setSuccess('');
     setLoading(true);
 
+    const trimmedUsername = formData.username.trim();
+    const trimmedEmail = formData.email.trim();
+
+    if (!trimmedUsername || trimmedUsername.length < 3) {
+      setError('USERNAME MUST BE AT LEAST 3 CHARACTERS');
+      setLoading(false);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+      setError('USERNAME CAN ONLY CONTAIN LETTERS, NUMBERS, AND UNDERSCORES');
+      setLoading(false);
+      return;
+    }
+
+    if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setError('PLEASE ENTER A VALID EMAIL ADDRESS');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('PASSWORD MUST BE AT LEAST 8 CHARACTERS');
+      setLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('PASSWORDS DO NOT MATCH');
       setLoading(false);
       return;
     }
 
-    const result = await register(formData.username, formData.email, formData.password);
+    try {
+      const result = await register(trimmedUsername, trimmedEmail, formData.password);
 
-    if (result.success) {
-      setSuccess('SAVE FILE CREATED!');
-      setTimeout(() => {
-        navigate('/character');
-      }, 1000);
-    } else {
-      setError(result.error);
+      if (result.success) {
+        setSuccess('SAVE FILE CREATED!');
+        setTimeout(() => {
+          navigate('/character');
+        }, 1000);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Registration failed. Please try again.');
     }
 
     setLoading(false);
@@ -79,6 +110,8 @@ const Register = () => {
                 value={formData.username}
                 onChange={handleChange}
                 required
+                minLength={3}
+                maxLength={30}
                 className="pixel-input"
                 placeholder="_"
               />
@@ -94,6 +127,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                maxLength={255}
                 className="pixel-input"
                 placeholder="_"
               />
@@ -109,6 +143,8 @@ const Register = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                minLength={8}
+                maxLength={128}
                 className="pixel-input"
                 placeholder="_"
               />
@@ -124,6 +160,8 @@ const Register = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
+                minLength={8}
+                maxLength={128}
                 className="pixel-input"
                 placeholder="_"
               />

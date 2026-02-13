@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
+const { escapeHtml } = require('../utils/sanitize');
 
 // Initialize Google OAuth client
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -34,6 +35,14 @@ const attachCookiesToReply = (fastify, reply, user, refreshTokenId) => {
 async function loginHandler(fastify, request, reply) {
     const { email, username, password, deviceId } = request.body;
     const emailOrUsername = email || username; // Accept either email or username
+
+    if (!emailOrUsername) {
+        return reply.code(400).send({ error: 'Bad Request', message: 'Email or username is required' });
+    }
+    if (!password) {
+        return reply.code(400).send({ error: 'Bad Request', message: 'Password is required' });
+    }
+
     const userModel = new User(fastify.knex);
     const user = await userModel.loginUser(emailOrUsername, password);
 
@@ -89,7 +98,7 @@ async function googleAuthHandler(fastify, request, reply) {
         const googlePayload = ticket.getPayload();
         const googleId = googlePayload.sub;
         const email = googlePayload.email;
-        const username = googlePayload.name;
+        const username = escapeHtml(googlePayload.name);
 
         // Find or create user
         let user = await userModel.findByEmail(email, googleId);
@@ -145,7 +154,7 @@ async function googleAuthHandler(fastify, request, reply) {
         
         return reply.code(500).send({
             error: "Internal Server Error",
-            message: "Google authentication failed: " + error.message
+            message: "Google authentication failed"
         });
     }
 }

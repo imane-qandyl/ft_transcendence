@@ -121,11 +121,11 @@ class Friend {
 		if (!friendship) {
 			throw new CustomError.NotFoundError("No such request was found");
 		}
-		// if (Number(friendship.friend_id) !== Number(receiverId)) {
-		// 	throw new CustomError.UnauthorizedError(
-		// 		"You're not authorized to respond to this request"
-		// 	);
-		// }
+		if (Number(friendship.friend_id) !== Number(receiverId)) {
+			throw new CustomError.UnauthorizedError(
+				"You're not authorized to respond to this request"
+			);
+		}
 		if (friendship.status === "accepted") {
 			throw new CustomError.BadRequestError(
 				"You are already friends with this user"

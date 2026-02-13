@@ -51,7 +51,7 @@ React 18 because hooks are life, and Phaser 3 for the actual game graphics. We s
 - **Orchestration**: Docker Compose for local development
 - **SSL/TLS**: Automated certificate generation
 - **Process Management**: PM2 for production deployment
-- **Database Management**: Knex.js migrations with seed data
+- **Database Management**: Knex.js migrations
 
 ##  Want to Try It Out?
 
@@ -300,7 +300,7 @@ Access the interactive API documentation at `http://localhost:3000/docs` when ru
 │   ├── routes/               # API route definitions
 │   ├── middleware/           # Authentication & validation
 │   ├── migrations/           # Database schema evolution
-│   ├── seeds/               # Initial data population
+
 │   └── socketHandlers/      # WebSocket event handlers
 ├── frontend/                  # React application
 │   ├── src/
@@ -339,9 +339,6 @@ Create environment files for different deployment scenarios:
 ```bash
 # Run migrations
 npm run migrate
-
-# Seed initial data
-npm run seed
 
 # Rollback migration
 npm run migrate:rollback

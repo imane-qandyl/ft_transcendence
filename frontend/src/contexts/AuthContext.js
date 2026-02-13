@@ -54,11 +54,16 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (emailOrUsername, password) => {
     try {
+      const trimmedInput = (emailOrUsername || '').trim();
+      if (!trimmedInput || !password) {
+        return { success: false, error: 'Username/email and password are required' };
+      }
+
       // Determine if input is email or username
-      const isEmail = emailOrUsername.includes('@');
+      const isEmail = /^\S+@\S+\.\S+$/.test(trimmedInput);
       const requestBody = isEmail
-        ? { email: emailOrUsername, password }
-        : { username: emailOrUsername, password };
+        ? { email: trimmedInput, password }
+        : { username: trimmedInput, password };
 
       const response = await api.post('auth/login', requestBody);
       
@@ -92,9 +97,21 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
+      const trimmedUsername = (username || '').trim();
+      const trimmedEmail = (email || '').trim();
+      if (!trimmedUsername || trimmedUsername.length < 3) {
+        return { success: false, error: 'Username must be at least 3 characters' };
+      }
+      if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+        return { success: false, error: 'Please enter a valid email address' };
+      }
+      if (!password || password.length < 8) {
+        return { success: false, error: 'Password must be at least 8 characters' };
+      }
+
       const response = await api.post('auth/register', {
-        username,
-        email,
+        username: trimmedUsername,
+        email: trimmedEmail,
         password
       });
       

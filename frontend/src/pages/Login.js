@@ -30,8 +30,21 @@ const Login = () => {
     setError('');
     setLoading(true);
 
+    const trimmedInput = formData.emailOrUsername.trim();
+    if (!trimmedInput) {
+      setError('Please enter your username or email');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.password) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const result = await login(formData.emailOrUsername, formData.password);
+      const result = await login(trimmedInput, formData.password);
 
       if (result.success) {
         navigate('/play');
@@ -124,6 +137,7 @@ const Login = () => {
                 value={formData.emailOrUsername}
                 onChange={handleChange}
                 required
+                maxLength={255}
                 className="pixel-input"
                 placeholder="_"
               />
@@ -139,6 +153,7 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                maxLength={128}
                 className="pixel-input"
                 placeholder="_"
               />

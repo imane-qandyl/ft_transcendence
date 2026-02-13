@@ -6,10 +6,9 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "setup": "mkdir -p db && knex migrate:latest && knex seed:run",
+    "setup": "mkdir -p db && knex migrate:latest",
     "migrate": "knex migrate:latest",
-    "migrate:rollback": "knex migrate:rollback",
-    "seed": "knex seed:run"
+    "migrate:rollback": "knex migrate:rollback"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

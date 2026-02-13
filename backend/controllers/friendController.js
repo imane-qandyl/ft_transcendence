@@ -1,4 +1,5 @@
 const CustomError = require('../errors');
+const { escapeHtml } = require('../utils/sanitize');
 
 module.exports = (friendModel, notificationModel = null) => ({
   sendRequest: async (request, reply) => {
@@ -33,7 +34,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       // Create a notification if requested and notificationModel available
       if (notify && notificationModel) {
         try {
-          const senderUsername = request.user.username || 'Someone';
+          const senderUsername = escapeHtml(request.user.username || 'Someone');
           await notificationModel.createNotification(
             senderId,
             parseInt(receiverId, 10),
@@ -54,7 +55,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       if (error instanceof CustomError.UnauthorizedError) return reply.code(403).send({ success: false, message: error.message });
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to send friend request', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to send friend request' });
     }
   },
 
@@ -70,7 +71,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       return reply.send({ success: true, data: friends });
     } catch (error) {
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to list friends', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to list friends' });
     }
   },
 
@@ -86,7 +87,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       return reply.send({ success: true, data: requests });
     } catch (error) {
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to list sent requests', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to list sent requests' });
     }
   },
 
@@ -102,7 +103,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       return reply.send({ success: true, data: requests });
     } catch (error) {
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to list received requests', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to list received requests' });
     }
   },
 
@@ -126,7 +127,7 @@ module.exports = (friendModel, notificationModel = null) => ({
         try {
           await notificationModel.deleteNotification(senderUser.id, receiverId, 'friend_request');
           if (status === 'accepted') {
-            await notificationModel.createNotification(receiverId, senderUser.id, null, 'friend_accept', `${request.user.username || 'Someone'} accepted your friend request`);
+            await notificationModel.createNotification(receiverId, senderUser.id, null, 'friend_accept', `${escapeHtml(request.user.username || 'Someone')} accepted your friend request`);
           }
         } catch (e) {
           request.log && request.log.error('Notification handling failed', e.message);
@@ -140,7 +141,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       if (error instanceof CustomError.UnauthorizedError) return reply.code(403).send({ success: false, message: error.message });
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to respond to friend request', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to respond to friend request' });
     }
   },
 
@@ -174,7 +175,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       if (error instanceof CustomError.UnauthorizedError) return reply.code(403).send({ success: false, message: error.message });
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to abort friendship', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to abort friendship' });
     }
   },
 
@@ -200,7 +201,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       if (error instanceof CustomError.UnauthorizedError) return reply.code(403).send({ success: false, message: error.message });
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to block friend', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to block friend' });
     }
   },
 
@@ -226,7 +227,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       if (error instanceof CustomError.UnauthorizedError) return reply.code(403).send({ success: false, message: error.message });
 
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to unblock friend', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to unblock friend' });
     }
   },
 
@@ -242,7 +243,7 @@ module.exports = (friendModel, notificationModel = null) => ({
       return reply.send({ success: true, data: blockedUsers });
     } catch (error) {
       request.log && request.log.error(error);
-      return reply.code(500).send({ success: false, message: 'Failed to list blocked users', error: error.message });
+      return reply.code(500).send({ success: false, message: 'Failed to list blocked users' });
     }
   }
 });
