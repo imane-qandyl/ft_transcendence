@@ -34,10 +34,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get('users/me');
       const userData = response.data;
+      if (!userData || userData.user === null) {
+        // User not found in DB - stale token
+        localStorage.removeItem('token');
+        delete api.defaults.headers.common['Authorization'];
+        setUser(null);
+        return;
+      }
       setUser({ ...userData, token: localStorage.getItem('token'), isAuthenticated: true });
     } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-      // Token might be invalid, clear it
+      // Token might be invalid or user not found - clear it silently
       localStorage.removeItem('token');
       delete api.defaults.headers.common['Authorization'];
       setUser(null);

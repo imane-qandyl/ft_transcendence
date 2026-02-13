@@ -358,10 +358,10 @@ module.exports = async function(fastify, options) {
         }
       }
 
-      // If no character exists, return 404 so frontend shows CharacterCreate screen
+      // If no character exists, return 200 with null so frontend shows CharacterCreate screen
       if (!character) {
-        return reply.code(404).send({
-          error: 'No character found',
+        return reply.send({
+          character: null,
           message: 'Please create a character first'
         });
       }

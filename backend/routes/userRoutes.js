@@ -44,9 +44,9 @@ async function userRoutes(fastify, options) {
                 .select('id', 'username', 'email', 'avatar_url', 'twofa_enabled', 'created_at', 'updated_at');
 
             if (!user) {
-                return reply.code(404).send({ 
-                    error: 'Not Found', 
-                    message: 'User not found' 
+                return reply.code(200).send({
+                    user: null,
+                    message: 'User not found'
                 });
             }
 

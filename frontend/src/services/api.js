@@ -37,6 +37,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
+    } else if (error.response?.status === 404) {
+      // 404s are expected in many flows (e.g. no character yet) - don't log as errors
     } else {
       logError(`Response error: ${error.response?.status} - ${error.message}`, error.response?.data);
     }

@@ -27,12 +27,13 @@ const Character = () => {
     try {
       setLoading(true);
       const response = await api.get('characters/me');
-      setCharacter(response.data.character);
-      setError('');
+      if (response.data.character) {
+        setCharacter(response.data.character);
+        setError('');
+      }
       fetchAllCharacters();
     } catch (err) {
-      if (err.response?.status === 404) fetchAllCharacters();
-      else setError('Failed to load character');
+      setError('Failed to load character');
     } finally {
       setLoading(false);
     }
