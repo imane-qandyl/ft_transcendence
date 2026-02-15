@@ -17,6 +17,13 @@ const Profile = () => {
   const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Username and email editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editError, setEditError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     fetchProfile();
     fetchCharacter();
@@ -369,16 +376,108 @@ const Profile = () => {
 </div>
           </div>
 
-          {/* User Info (unchanged) */}
+          {/* User Info */}
           <div className="flex-1 w-full">
             <div className="mb-4">
               <div className="text-pixel-white text-sm mb-1">USERNAME</div>
-              <div className="text-pixel-mid text-base pixel-text">{userData?.username}</div>
+              {!isEditing ? (
+                <div className="text-pixel-mid text-base pixel-text">{userData?.username}</div>
+              ) : (
+                <input
+                  className="w-full p-2 bg-pixel-black text-pixel-mid border-2 border-pixel-light"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                />
+              )}
             </div>
             <div className="mb-4">
               <div className="text-pixel-white text-sm mb-1">EMAIL</div>
-              <div className="text-pixel-mid text-base pixel-text">{userData?.email}</div>
+              {!isEditing ? (
+                <div className="text-pixel-mid text-base pixel-text">{userData?.email}</div>
+              ) : (
+                <input
+                  className="w-full p-2 bg-pixel-black text-pixel-mid border-2 border-pixel-light"
+                  value={editEmail}
+                  onChange={e => setEditEmail(e.target.value)}
+                />
+              )}
             </div>
+
+            {/* Edit button */}
+            {!isEditing && (
+              <div className="mb-4">
+                <button
+                  onClick={() => {
+                    setIsEditing(true);
+                    setEditName(userData?.username || '');
+                    setEditEmail(userData?.email || '');
+                  }}
+                  className="px-4 py-2 bg-retro-purple border-3 border-retro-purple text-pixel-black text-sm hover:brightness-110"
+                >
+                  Edit Profile
+                </button>
+              </div>
+            )}
+
+            {/* Save/Cancel buttons */}
+            {isEditing && (
+              <div className="flex items-center gap-2 mb-4">
+                <button
+                  onClick={async () => {
+                    setEditError(null);
+                    // basic validation
+                    if (!editName || editName.trim().length < 1) {
+                      setEditError('Username is required');
+                      return;
+                    }
+                    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+                    if (!editEmail || !emailRegex.test(editEmail)) {
+                      setEditError('Enter a valid email');
+                      return;
+                    }
+
+                    setIsSaving(true);
+                    try {
+                      const payload = { username: editName.trim(), email: editEmail.trim() };
+                      await api.put(`users/${userData.id}`, payload);
+                      // Refresh local profile data
+                      const resp = await api.get('users/me');
+                      setUserData(resp.data);
+                      setIsEditing(false);
+                      setEditError(null);
+                    } catch (err) {
+                      console.error('Save failed', err);
+                      const msg = err.response?.data?.message || err.response?.data?.error || 'Save failed';
+                      setEditError(msg);
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-retro-green text-pixel-black text-sm border-3 border-retro-green hover:brightness-110 disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditName(userData?.username || '');
+                    setEditEmail(userData?.email || '');
+                    setEditError(null);
+                  }}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-pixel-black text-pixel-mid text-sm border-3 border-pixel-light hover:brightness-110 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Error message */}
+            {editError && (
+              <div className="text-retro-red text-xs mb-2 pixel-text">{editError}</div>
+            )}
           </div>
 
         </div>

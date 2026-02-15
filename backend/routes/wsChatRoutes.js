@@ -112,40 +112,8 @@ async function wsChatRoutes(fastify, options) {
       }
 
       // -------------------------
-      // 2) CHAT_SEND or CREATE_CHAT after auth
+      // 2) CHAT_SEND after auth
       // -------------------------
-      if (msg.type === "CREATE_CHAT") {
-        const user2Id = Number(msg.payload?.user2Id);
-
-        if (!Number.isInteger(user2Id) || user2Id < 1 || user2Id === authedUserId) {
-          fastify.log.error("[WS-Chat] CREATE_CHAT validation failed:", { user2Id, authedUserId });
-          sendJSON(socket, { type: "ERROR", payload: { message: "user2Id required and must be a valid user different from yourself" } });
-          return;
-        }
-
-        try {
-          const chatId = await chatModel.createChatBetweenUsers(authedUserId, user2Id);
-          fastify.log.info(`[WS-Chat] ✓ Chat created: id=${chatId}`);
-          sendJSON(socket, { type: "CHAT_CREATED", payload: { chatId } });
-        } catch (e) {
-          // Chat might already exist
-          if (e.message && e.message.includes("already exists")) {
-            try {
-              // Try to get existing chat
-              const existingChatId = await chatModel.getChatBetweenUsers(authedUserId, user2Id);
-              fastify.log.info(`[WS-Chat] Chat already exists: id=${existingChatId}`);
-              sendJSON(socket, { type: "CHAT_CREATED", payload: { chatId: existingChatId } });
-            } catch (getErr) {
-              fastify.log.error(`[WS-Chat] Failed to retrieve existing chat: ${getErr.message}`);
-              sendJSON(socket, { type: "ERROR", payload: { message: "Chat already exists but could not be retrieved" } });
-            }
-          } else {
-            fastify.log.error(`[WS-Chat] Failed to create chat: ${e.message}`, e);
-            sendJSON(socket, { type: "ERROR", payload: { message: e.message || "Failed to create chat" } });
-          }
-        }
-        return;
-      }
 
       if (msg.type !== "CHAT_SEND") {
         fastify.log.warn(`[WS-Chat] Expected CHAT_SEND but got ${msg.type}`);

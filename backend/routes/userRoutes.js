@@ -104,6 +104,7 @@ async function userRoutes(fastify, options) {
                 type: 'object',
                 properties: {
                     username: { type: 'string', minLength: 3, maxLength: 30, pattern: '^[a-zA-Z0-9_]+$' },
+                    email: { type: 'string', format: 'email', maxLength: 255 },
                     avatar_url: { type: 'string', maxLength: 2000000, format: 'uri' },
                     bio: { type: 'string', maxLength: 500 }
                 },
@@ -125,7 +126,7 @@ async function userRoutes(fastify, options) {
             }
 
             // Only allow certain fields to be updated
-            const allowedFields = ['avatar_url', 'username', 'bio'];
+            const allowedFields = ['avatar_url', 'username', 'email', 'bio'];
             const updateData = {};
             
             for (const field of allowedFields) {
@@ -157,6 +158,21 @@ async function userRoutes(fastify, options) {
                     });
                 }
                 updateData.avatar_url = safeUrl;
+            }
+
+            // If email is being updated, ensure it's not used by another user
+            if (updateData.email) {
+                const existing = await userModel.db('users')
+                    .where({ email: updateData.email })
+                    .andWhereNot('id', requestedUserId)
+                    .first();
+
+                if (existing) {
+                    return reply.code(400).send({
+                        error: 'Bad Request',
+                        message: 'Email already in use by another account'
+                    });
+                }
             }
 
             updateData.updated_at = new Date();

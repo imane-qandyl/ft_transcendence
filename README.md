@@ -1,463 +1,153 @@
+*This project has been created as part of the 42 curriculum by ymrabeti, imqandyl, reahmed, fishaq, ahashem.*
+
 # ft_transcendence - Street Pixel Wars
 
-Hey there!  Welcome to our **Street Pixel Wars** project - a gangster-themed PvP combat game that we built from scratch. Think old-school pixel art meets modern web tech, with a dash of organized crime flavor!
+Hey there! Welcome to **Street Pixel Wars** - a gangster-themed PvP combat game we built from scratch. Think old-school pixel art meets modern web tech. You create characters, fight other players in turn-based battles, take over city territories, and climb the criminal ranks.
 
-![Project Status](https://img.shields.io/badge/status-completed-success)
-![Tech Stack](https://img.shields.io/badge/stack-Node.js%20|%20React%20|%20Phaser3-blue)
-![Database](https://img.shields.io/badge/database-SQLite-orange)
+## Team
 
-##  What's This All About?
+| Login | Role | What they did |
+|-------|------|---------------|
+| **ymrabeti** | PM + Developer | Game logic, AI opponents, combat system, frontend game pages, Phaser 3 integration |
+| **imqandyl** | Tech Lead + Developer | Backend API, database, Docker/DevOps, security, 2FA, Google OAuth |
+| **ahashem** | PO + Developer | Frontend UI/UX, pixel-art design, Tailwind theme, Privacy Policy & ToS pages |
+| **reahmed** | Developer | WebSocket infrastructure, real-time chat, friend panel, notifications |
+| **fishaq** | Developer | User profiles, avatar upload, user management |
 
-So here's the deal - We wanted to create something that felt like those classic gangster strategy games but with real-time multiplayer combat. You create your character (we spent way too much time on the pixel art sprites), battle other players, take over territories around the city, and work your way up the criminal ladder.
+## How We Worked Together
 
-The combat is turn-based because we think it's more strategic than button mashing, and there's this whole territory system where you can literally own parts of the city and collect passive income. Plus we threw in a bunch of crime missions because... well, it's a gangster game! 
+We used **WhatsApp** for daily communication and **GitHub Issues** to track tasks. Each person owned their feature area, made branches, and we reviewed each other's pull requests before merging. We had regular syncs to check progress and sort out any blockers.
 
-### What You Can Actually Do
-- **Fight Other Players** - Turn-based combat with actual strategy involved
-- **Take Over Territory** - 12 different spots around the city you can control
-- **Pull Off Crimes** - 20+ different jobs from pickpocketing to bank heists
-- **Level Up Your Character** - Customize your stats and unlock new abilities
-- **Chat & Make Friends** - Because even criminals need friends, right?
-- **Climb the Ranks** - ELO system so you fight people at your skill level
+## Description
 
-##  How We Built This Thing
+**Street Pixel Wars** is a multiplayer web app where players create characters with customizable stats, battle each other or AI opponents in turn-based combat, capture territories, and complete crime missions for resources and XP.
 
-### The Tech Stack (aka what we learned along the way)
+**What you can do:**
+- Fight other players (or AI) with Attack/Defend/Special moves
+- Level up, allocate stats, and customize your character
+- Chat with other players, add friends, block users
+- Compete on the ELO leaderboard
+- Secure your account with 2FA or sign in with Google
 
-#### Backend - The Engine Room
-We went with **Fastify** instead of Express because it's faster and has better TypeScript support. The database is just SQLite (yeah, we know, not PostgreSQL, but it works perfectly for this scale and makes deployment so much easier).
+## Instructions
 
-For auth, we implemented proper JWT tokens AND added 2FA with Google Authenticator because we wanted to learn how that works. Real-time stuff is handled by Socket.IO - turns out synchronizing game state between players is trickier than we thought! 
+**Prerequisites:** Docker, Docker Compose, Git, Google Chrome
 
-- **Framework**: Fastify (Node.js) - fast and modern
-- **Database**: SQLite with Knex.js - simple but powerful
-- **Authentication**: JWT + 2FA - because security matters
-- **Real-time**: Socket.IO - for live battles and chat
-- **Security**: bcrypt, rate limiting, all the good stuff
-- **Docs**: Swagger UI - so you can actually use our API
-
-#### Frontend - The Pretty Stuff
-React 18 because hooks are life, and Phaser 3 for the actual game graphics. We spent AGES getting the pixel art to look crisp on different screen sizes. Tailwind for styling because we're not CSS wizards, and it just works.
-
-- **Framework**: React 18 - hooks everywhere!
-- **Game Engine**: Phaser 3 - for that pixel-perfect retro feel
-- **Routing**: React Router v6 - smooth navigation
-- **Styling**: Tailwind CSS - we're not designers, this helps
-- **HTTP Client**: Axios - reliable API calls
-- **Real-time**: Socket.IO Client - for live game updates
-
-#### DevOps & Infrastructure
-- **Containerization**: Docker with multi-stage builds
-- **Orchestration**: Docker Compose for local development
-- **SSL/TLS**: Automated certificate generation
-- **Process Management**: PM2 for production deployment
-- **Database Management**: Knex.js migrations
-
-##  Want to Try It Out?
-
-### You'll Need
-- Node.js 18+ (and npm, obviously)
-- Docker and Docker Compose (trust me, it's easier this way)
-- Git (you probably have this already)
-
-### Getting It Running
-
-1. **Grab the code**
-   ```bash
-   git clone <repository-url>
-   cd final
-   ```
-
-2. **One command to rule them all**
-   ```bash
-   make
-   ```
-   We set up a Makefile because we got tired of typing long Docker commands. This will:
-   - Build everything in Docker containers
-   - Generate SSL certificates (because Chrome is picky)
-   - Start the backend and frontend
-   - Set up the database with some test data
-
-3. **Check it out**
-   ```
-   https://localhost:8443
-   ```
-   
-   (Yeah, it's HTTPS. Local development with SSL certificates because we wanted to learn how to do it properly!)
-
-### Alternative Setup Methods
-
-#### Manual Docker Setup
+**Setup:**
 ```bash
-# Build containers
-docker compose build
-
-# Generate SSL certificates
-docker compose up ssl-generator
-
-# Start services
-docker compose up -d backend frontend
+git clone <repository-url>
+cd final
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+make
 ```
 
-#### Development Mode
-```bash
-# Backend development
-cd backend
-npm install
-npm run dev
+That's it. `make` builds the containers, generates SSL certs, runs migrations, and starts everything.
 
-# Frontend development (separate terminal)
-cd frontend
-npm install
-npm start
-```
+Open **https://localhost:8443** in Chrome.
 
-##  Game Features
+API docs at **https://localhost:8443/docs** (Swagger UI).
 
-### 1. Character System
-- **Multiple Character Slots** per user account
-- **Stat Allocation** (Strength, Speed, Defense, Luck)
-- **Level Progression** with experience points
-- **Character Customization** with different sprites and themes
+**Other commands:** `make down`, `make restart`, `make clean`, `make logs`
 
-### 2. Combat System
-- **Turn-based Strategy** with action selection (Attack, Defend, Special)
-- **Speed-based Turn Order** determines who acts first
-- **Critical Hit System** with luck-based mechanics
-- **Damage Calculation** incorporating all character stats
-- **Victory Conditions** with comprehensive battle results
+## Tech Stack
 
-### 3. AI Opponent System (Smart Enemies That Actually Challenge You!)
-This was one of those features we didn't plan on implementing, but once we started, we couldn't stop. Our AI isn't just a random button-masher - it actually thinks about its moves!
+**Frontend:** React 18 (component-based UI with hooks), Phaser 3 (2D game engine for the battle scenes), Tailwind CSS (utility-first styling with our custom pixel-art theme), React Router v6, Socket.IO Client, Axios
 
-#### How the AI Works
-- **Dynamic Difficulty Scaling** - The AI automatically matches your skill level by analyzing your character's stats and ELO rating
-- **Intelligent Decision Making** - Uses weighted probability systems to choose between attack, defend, and special moves based on:
-  - Current health ratios (yours vs AI's)
-  - Turn number and battle progression
-  - Stat advantages/disadvantages
-  - Critical hit chances and luck factors
-- **Realistic Thinking Delays** - 2-second pauses before moves (because even AI needs to "think")
+**Backend:** Fastify (faster than Express, has built-in schema validation), Socket.IO (real-time game + chat), Knex.js (SQL query builder with migrations), SQLite (simple and easy to deploy), bcrypt (password hashing), JWT (auth tokens), Speakeasy (2FA/TOTP), google-auth-library (OAuth)
 
-#### AI Difficulty Levels
-The system creates opponents that scale with your progress:
+**DevOps:** Docker + Docker Compose (single-command deployment), Nginx (reverse proxy, SSL termination, WebSocket proxying), OpenSSL (auto-generated HTTPS certs), Makefile
 
-- **Easy AI** (Levels 1-2, ELO < 900): "Rookie Bot", "Training Dummy"
-  - Makes suboptimal choices 30% of the time
-  - Overly defensive, rarely uses special attacks
-  - Perfect for learning the game mechanics
-
-- **Medium AI** (Levels 3-5, ELO < 1100): "Street Fighter", "Cyber Punk" 
-  - Balanced gameplay with occasional mistakes (15% suboptimal plays)
-  - Good mix of offensive and defensive strategies
-  - Challenges you without being unfair
-
-- **Hard AI** (Levels 6-10, ELO < 1300): "Elite Enforcer", "Combat Veteran"
-  - Plays optimally most of the time
-  - More aggressive in mid/late game
-  - Uses special attacks strategically
-
-- **Expert AI** (Level 10+, ELO 1300+): "The Terminator", "Code Reaper"
-  - Near-perfect tactical play
-  - Adapts patterns during battle
-  - Uses periodic defensive strategies to counter predictable play
-
-#### AI Character Generation
-- **Stat Scaling**: AI stats are based on your character's stats with ±10% variance for unpredictability
-- **Visual Variety**: Random sprite combinations so each AI opponent looks unique
-- **Level Matching**: AI level is typically ±1 of your character's level
-- **ELO Balancing**: AI ELO rating stays within ±50 points of yours for fair matches
-
-The best part? The AI actually gets better as you do, so you'll always have challenging opponents even when other players aren't available for matches!
-
-### 4. Territory Wars 
-Okay, this is where I got really excited. I created 12 different territories around the city, each with their own vibe:
-  - **Downtown** (the good stuff): Casino, Bank, Nightclub District
-  - **Industrial** (gritty): Warehouses, Docks, Factory District  
-  - **Suburbs** (easier targets): Shopping Mall, Corner Store, Gas Station
-  - **Red Light District** (because every gangster game needs one)
-
-Once you control a territory, it generates passive income every hour. So you can literally wake up richer! The battles use your character's power level, but there's also strategy involved - some territories are harder to take but worth more money.
-
-### 5. Crime Spree (Because Why Not?)
-We went a bit overboard with the crime system - there are over 20 different jobs you can pull:
-  - **Starting Out**: Pickpocketing tourists, robbing corner stores (we all start somewhere)
-  - **Getting Serious**: Burglary, drug running, a little extortion
-  - **Big League**: Car theft, weapons smuggling (now we're talking)
-  - **Legendary**: Bank heists, casino jobs, high-profile hits
-
-Each crime costs energy and has a success rate based on your level. Fail a bank heist at level 5? Yeah, that's going to hurt. But succeed at a high-level crime and you'll be rolling in cash and XP!
-
-Energy regenerates over time, so you can't just grind crimes all day (learned that balance lesson the hard way during testing).
-
-### 6. Social Features
-- **Real-time Chat System** with persistent message history
-- **Friends Management** with request/accept/decline functionality
-- **User Blocking** and privacy controls
-- **Match History** tracking with detailed statistics
-- **Leaderboards** for top criminals and PvP fighters
-- **Notification System** for game events
-
-### 7. Economic System
-- **Multi-currency Economy**: Coins and Experience Points
-- **Shop System** for character upgrades and customization
-- **Stat Point Allocation** for character build diversity
-- **Progressive Costs** to maintain game balance
-
-##  API Documentation
-
-### RESTful Endpoints
-- `/auth/*` - Authentication and user management
-- `/characters/*` - Character CRUD operations
-- `/matches/*` - Match creation and history
-- `/territories/*` - Territory information and battles
-- `/crimes/*` - Crime activities and attempts
-- `/chat/*` - Chat functionality and history
-- `/friends/*` - Social features and friend management
-- `/shop/*` - In-game purchases and upgrades
-
-### WebSocket Events
-- **Match Events**: Turn actions, state updates, battle results
-- **Chat Events**: Real-time messaging and notifications
-- **Game Events**: Territory updates, crime completions
-- **System Events**: Friend requests, notifications
-
-Access the interactive API documentation at `http://localhost:3000/docs` when running the backend.
-
-##  Database Schema
-
-### Core Game Tables
-- **users** - Authentication and profile data
-- **characters** - Player game profiles with stats
-- **matches** - PvP match records and results
-- **character_resources** - Energy and progression tracking
-
-### Territory System
-- **territories** - Territory definitions and properties
-- **territory_ownership** - Current territory control state
-- **territory_battles** - Battle history and outcomes
-
-### Crime System
-- **crime_activities** - Available crime mission definitions
-- **crime_attempts** - Player crime history and results
-
-### Social Features
-- **friendships** - Friend relationships and status
-- **chat_participants** - Chat room membership
-- **chat_messages** - Persistent message storage
-- **notifications** - System and user notifications
-
-##  Game Balance & Mechanics
-
-### Character Progression
-- **Level-based Scaling** with exponential XP requirements
-- **Stat Point Distribution** for character customization
-- **Equipment System** (planned expansion)
-- **Skill Unlock Requirements** based on level milestones
-
-### Combat Balance
-- **Speed Determines Turn Order** for strategic positioning
-- **Critical Chance Scaling** requires investment for effectiveness
-- **Luck Provides Miss Chance** as defensive mechanism
-- **Defense Actions** provide damage reduction options
-- **Level Differences** affect success rates and damage
-
-### Economic Balance
-- **Territory Income Scaling** by zone difficulty and value
-- **Crime Reward Scaling** by risk level and requirements  
-- **Energy Limitations** prevent excessive grinding
-- **Progressive Difficulty Curves** maintain long-term engagement
-
-##  Security Features
-
-### Authentication & Authorization
-- **JWT Token Authentication** with secure secret management
-- **Two-Factor Authentication (2FA)** using time-based OTP
-- **Google OAuth Integration** for convenient sign-in
-- **Password Security** with bcrypt hashing and salt
-- **Session Management** with token expiration
-
-### API Security
-- **Rate Limiting** to prevent abuse and spam
-- **CORS Configuration** for cross-origin request control
-- **Input Validation** using comprehensive schemas
-- **SQL Injection Prevention** with parameterized queries
-- **Error Handling** without information disclosure
-
-### Game Security
-- **Server-side Validation** of all game actions
-- **Anti-cheat Measures** in combat calculations
-- **Resource Validation** for energy and currency systems
-- **Transaction Integrity** for database operations
-
-##  Project Structure
+## Database Schema
 
 ```
-├── backend/                    # Node.js/Fastify API server
-│   ├── controllers/           # HTTP request handlers
-│   ├── services/             # Business logic layer
-│   ├── models/               # Database models
-│   ├── routes/               # API route definitions
-│   ├── middleware/           # Authentication & validation
-│   ├── migrations/           # Database schema evolution
+users  ─────┬──── characters (1:N) ──── matches (N:M)
+  │         │                        
+  │         │                        
+  ├── friends (N:M, self-ref)
+  ├── chat_participants ── chats ── messages (1:N)
+  ├── notifications (1:N)
+  └── refresh_tokens (1:N)
 
-│   └── socketHandlers/      # WebSocket event handlers
-├── frontend/                  # React application
-│   ├── src/
-│   │   ├── components/      # Reusable React components
-│   │   ├── pages/          # Page-level components
-│   │   ├── game/           # Phaser 3 game logic
-│   │   ├── services/       # API communication layer
-│   │   └── contexts/       # React Context providers
-│   └── public/             # Static assets and sprites
-├── ssl/                      # SSL certificate storage
-├── docker-compose.yml        # Container orchestration
-└── Makefile                 # Build and deployment automation
 ```
 
-##  Deployment
+**Main tables:** `users` (auth + profile), `characters` (stats, level, ELO), `matches` (PvP records), `friends` (relationships), `chats`/`messages` (chat system), `notifications`, `refresh_tokens`, `character_resources` (energy tracking)
 
-### Production Deployment
-```bash
-# Build optimized containers
-docker compose -f docker-compose.prod.yml build
+All managed through 13 Knex.js migration files.
 
-# Deploy with SSL
-docker compose -f docker-compose.prod.yml up -d
+## Features
 
-# Check service status
-docker compose ps
-```
+| Feature | Who built it |
+|---------|-------------|
+| Turn-based combat (Attack/Defend/Special, speed turns, crits) | ymrabeti |
+| AI opponents (4 difficulty tiers, weighted decisions, ELO scaling) | ymrabeti |
+| Character system (multiple slots, stat allocation, sprites, leveling) | ymrabeti, ahashem |
+| WebSocket infrastructure (Socket.IO server setup, connection handling) | ymrabeti, reahmed |
+| Real-time chat (persistent history, read receipts, blocking) | reahmed |
+| Friends panel (requests, accept/decline, online status) | reahmed |
+| Notification system (messages, friend requests, match results) | reahmed |
+| User profiles (avatar upload, bio, match history display) | fishaq |
+| User management (CRUD, search, account deletion) | fishaq |
+| Auth flows (registration, login, password change) | imqandyl |
+| 2FA with Google Authenticator (TOTP, QR code setup) | imqandyl |
+| Google OAuth sign-in | imqandyl |
+| Backend API (Fastify routes, JSON Schema validation, Swagger) | imqandyl |
+| Database design (13 migrations, indexes, Knex.js) | imqandyl |
+| Docker deployment (Compose, auto SSL, Makefile) | imqandyl |
+| Frontend UI/UX (React pages, Tailwind pixel-art theme) | ymrabeti,ahashem |
+| Game canvas (Phaser 3 scenes, sprite rendering) | ymrabeti |
+| Security (bcrypt, rate limiting, CORS, HTTPS, input sanitization) | imqandyl |
+| Privacy Policy & Terms of Service pages | ahashem |
+| Shop system and leaderboard | ymrabeti |
 
-### Environment Configuration
-Create environment files for different deployment scenarios:
-- `.env.development` - Local development settings
-- `.env.production` - Production environment variables
-- `.env.test` - Testing configuration
+## Modules (17 points)
 
-### Database Management
-```bash
-# Run migrations
-npm run migrate
+| # | Module | Category | Type | Pts | Who |
+|---|--------|----------|------|-----|-----|
+| 1 | **Use frameworks (frontend + backend)** | Web | Major | 2 | imqandyl, ahashem, ymrabeti |
+| 2 | **Real-time features (WebSockets)** | Web | Major | 2 | reahmed, ymrabeti |
+| 3 | **User interaction (chat + profile + friends)** | Web | Major | 2 | reahmed, fishaq |
+| 4 | **Standard user management** | User Mgmt | Major | 2 | fishaq |
+| 5 | **Web-based game** | Gaming | Major | 2 | ymrabeti |
+| 6 | **AI Opponent** | AI | Major | 2 | ymrabeti |
+| 7 | **Notification system** | Web | Minor | 1 | reahmed |
+| 8 | **OAuth 2.0 (Google)** | User Mgmt | Minor | 1 | imqandyl |
+| 9 | **Two-Factor Auth (2FA)** | User Mgmt | Minor | 1 | imqandyl |
+| 10 | **Game stats & match history** | User Mgmt | Minor | 1 | ymrabeti, fishaq |
+| 11 | **ORM (Knex.js)** | Web | Minor | 1 | imqandyl |
 
-# Rollback migration
-npm run migrate:rollback
-```
+**6 Major (12 pts) + 5 Minor (5 pts) = 17 points total (minimum required: 14)**
 
-##  Testing & Quality Assurance
+### Module justifications
 
-### Backend Testing
-- **Unit Tests** for service layer logic
-- **Integration Tests** for API endpoints
-- **Database Tests** for migration integrity
-- **Security Tests** for authentication flows
+1. **Frameworks** - React 18 with hooks and component architecture for frontend. Fastify with built-in validation and plugin system for backend. Both are proper frameworks with routing, state management, and ecosystems.
+2. **WebSockets** - Socket.IO handles real-time game state sync during PvP battles, live chat messaging, and instant notifications. Graceful connection/disconnection handling.
+3. **User interaction** - Chat with persistent messages and blocking, user profiles with avatars, friend system with add/remove/accept/block.
+4. **User management** - Profile updates, avatar upload with default fallback, friend list with online status, dedicated profile page with stats.
+5. **Web-based game** - Turn-based PvP combat with Phaser 3. Clear rules, win/loss conditions, ELO ranking. Players choose Attack/Defend/Special each turn.
+6. **AI Opponent** - 4 difficulty levels (Easy to Expert). Scales with player level and ELO. Uses weighted probability to pick moves based on health ratios, turn count, and stat matchups. Simulates human-like play.
+7. **Notifications** - Full CRUD notification system for messages, friend requests, match results. Aggregation to prevent spam. Mark-as-read support.
+8. **OAuth** - Google Sign-In via google-auth-library. Token verification, account creation/linking, refresh token management.
+9. **2FA** - TOTP via Speakeasy. QR code generation, 6-digit code validation, enable/disable flows.
+10. **Game stats** - Win/loss tracking, ELO ranking, match history with dates and opponents, leaderboard. Requires game module (implemented).
+11. **ORM** - Knex.js for all DB operations. 13 migrations, parameterized queries, transaction support.
 
-### Frontend Testing
-- **Component Tests** using React Testing Library
-- **Game Logic Tests** for Phaser 3 mechanics
-- **End-to-End Tests** for user workflows
-- **Performance Testing** for game responsiveness
+## Individual Contributions
 
-##  Performance Considerations
+**ymrabeti (PM + Developer)** - Managed the team, planned sprints. Built the entire game engine: Phaser 3 integration (BattleScene, game config), combat service (damage calc, crits, speed turns), AI opponent system (4 difficulty tiers with weighted decision-making), territory wars, crime missions, shop, character progression, and leaderboard. Biggest challenge was syncing real-time game state between players and balancing the AI.
 
-### Backend Optimization
-- **Database Indexing** on frequently queried columns
-- **Connection Pooling** for efficient database usage
-- **Rate Limiting** to prevent resource exhaustion
-- **Caching Strategies** for static game data
+**imqandyl (Tech Lead + Developer)** - Set up the whole technical architecture. Built the Fastify backend (app.js, routes, middleware, schemas), designed the database (13 Knex.js migrations), implemented JWT auth with refresh tokens, bcrypt password hashing, Google OAuth, and the full 2FA system with Speakeasy. Handled all DevOps: Docker multi-stage builds, Docker Compose, Nginx reverse proxy, SSL auto-generation, and the Makefile. Also did rate limiting, CORS, input sanitization, and HTTPS config. Hardest part was getting nginx to properly proxy WebSockets with SSL.
 
-### Frontend Optimization
-- **Code Splitting** for faster initial load times
-- **Asset Optimization** for sprite and image compression
-- **Lazy Loading** for non-critical components
-- **Memory Management** in Phaser 3 scenes
+**ahashem (PO + Developer)** - Designed the pixel-art visual theme, created the custom Tailwind CSS config with retro colors, built React page layouts and responsive design. Worked on character sprites and battle scene visuals. Created the Privacy Policy and Terms of Service pages. Challenge was making pixel art look crisp across different screen sizes.
 
-##  Contributing
+**reahmed (Developer)** - Owned the entire WebSocket infrastructure: set up Socket.IO on the backend (socketSetup.js), configured connection handling, authentication middleware for sockets, and event management. Built the real-time chat system (wsChatRoutes.js, useWebSocketChat.js hook) with persistent messages, read receipts, and user blocking. Implemented the friends panel (FriendsPanel.js, Friend.js model) with request/accept/decline/block flows. Built the notification system (Notification.js model, 292 lines) supporting message alerts, friend requests, and match results with aggregation. Toughest part was handling WebSocket reconnections and preventing duplicate notifications.
 
-### Development Workflow
-1. Fork the repository and create a feature branch
-2. Follow the established code style and conventions
-3. Write tests for new functionality
-4. Update documentation as needed
-5. Submit a pull request with detailed description
+**fishaq (Developer)** - Built the user profile page with avatar upload (file type/size validation, base64 conversion), username/email editing, and stats display. Implemented user CRUD operations (userRoutes.js, userController.js), search, and account deletion. Handled registration/login forms with frontend validation, password change flow, and the settings page. Integrated match history display and leaderboard ranking into profiles. Challenge was getting avatar uploads working with proper validation on both frontend and backend.
 
-### Code Style Guidelines
-- **Backend**: ESLint with Airbnb configuration
-- **Frontend**: Prettier with React best practices
-- **Database**: Consistent naming conventions
-- **Comments**: JSDoc for functions and classes
+## Resources
 
-##  What I'm Proud Of
+- [Fastify](https://fastify.dev/docs/latest/), [React](https://react.dev/), [Phaser 3](https://phaser.io/docs/3.80.0), [Socket.IO](https://socket.io/docs/v4/), [Knex.js](https://knexjs.org/guide/), [Tailwind CSS](https://tailwindcss.com/docs), [Docker](https://docs.docker.com/), [Speakeasy](https://github.com/speakeasyjs/speakeasy), [Google OAuth](https://github.com/googleapis/google-auth-library-nodejs), [bcrypt](https://github.com/kelektiv/node.bcrypt.js), [Nginx SSL](https://nginx.org/en/docs/http/configuring_https_servers.html)
 
-### The Technical Stuff That Actually Works
-- **Built a full multiplayer game** from scratch (and it doesn't crash!)
-- **Real-time combat synchronization** between players (this was HARD)
-- **Proper security** with 2FA because I wanted to do it right
-- **Clean API design** with documentation (future us will thank past us)
-- **Database that makes sense** and doesn't fall over under load
 
-### The Game Design Wins
-- **Actually fun to play** (we've spent way too many hours testing it)
-- **Balanced progression** - no pay-to-win nonsense here
-- **Social features that work** - the chat system is surprisingly robust
-- **Pixel art that doesn't hurt your eyes** (took forever to get right)
-- **Feature-complete** - everything you'd expect from a modern web game
-
-### Development Best Practices
-- **Clean Code Architecture** with separation of concerns
-- **Comprehensive Error Handling** with user-friendly messages
-- **Database Migration System** for schema version control
-- **Docker Containerization** for consistent deployments
-- **Automated Build Process** with Make commands
-
-##  Future Enhancements
-
-### Planned Features
-- **Guild/Gang System** for group play and territory wars
-- **Equipment and Crafting** system for character enhancement
-- **Daily Quests** and time-limited events
-- **Mobile App** with React Native
-- **Tournament System** for competitive organized play
-
-### Technical Improvements
-- **Redis Caching** for improved performance
-- **Microservices Architecture** for better scalability
-- **Advanced Analytics** for player behavior tracking
-- **CI/CD Pipeline** with automated testing and deployment
-- **Load Balancing** for high-availability production setup
-
-##  License
-
-This project is developed as part of the ft_transcendence curriculum and is intended for educational purposes.
-
-##  The Dream Team
-
-This project was built by our awesome team of 5 developers as part of the 42 School ft_transcendence curriculum. And wow, what a journey it's been working together!
-
-### How We Divided and Conquered
-- **Full-Stack Architecture** - Collaborative system design and planning
-- **Game Mechanics Development** - Combat system, territory control, crime activities
-- **Database Design & Implementation** - Schema design, migrations, and optimization
-- **API Development** - RESTful endpoints, WebSocket integration, and documentation  
-- **Frontend & Game Development** - React components, Phaser 3 integration, and UI/UX
-- **Security Implementation** - Authentication, authorization, 2FA, and data protection
-- **DevOps & Deployment** - Docker containerization, SSL setup, and deployment automation
-
-### The Challenges That United Us
-- **Real-time game synchronization** - Getting multiple players in sync without lag
-- **Complex database relationships** - Making sure everything connects properly
-- **Performance optimization** - Keeping the game smooth and responsive
-- **Security vs usability** - Balancing strong security with great user experience  
-- **Cross-browser compatibility** - Making sure it works everywhere
-- **Team coordination** - Managing a full-stack project across multiple developers
-
-Working as a team taught us so much about collaboration, code reviews, and building something bigger than any of us could have created alone. The best part? We actually had fun doing it! 
-
-### What We All Learned
-Honestly, this project taught us more about real-world development than most of our formal courses. Nothing beats the experience of building something from scratch with a team, dealing with merge conflicts, coordinating features, and seeing it all come together into something that actually works and is genuinely fun to play! 
-
----
-
-**Want to check it out?** Fire it up at https://localhost:8443  
-**Curious about the API?** Check out the docs at http://localhost:3000/docs  
-**Status**:  Actually works and is pretty fun!
+**Run it:** `make` then open https://localhost:8443
