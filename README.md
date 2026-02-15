@@ -61,20 +61,116 @@ API docs at **https://localhost:8443/docs** (Swagger UI).
 
 ## Database Schema
 
-```
-users  ─────┬──── characters (1:N) ──── matches (N:M)
-  │         │                        
-  │         │                        
-  ├── friends (N:M, self-ref)
-  ├── chat_participants ── chats ── messages (1:N)
-  ├── notifications (1:N)
-  └── refresh_tokens (1:N)
+Our database is built with **SQLite** and managed through **13 Knex.js migrations**. Here's how the tables connect:
 
 ```
+┌──────────────────────┐       ┌──────────────────────────┐
+│        users         │       │       characters          │
+├──────────────────────┤       ├──────────────────────────┤
+│ id (PK)              │──┐    │ id (PK, UUID)            │
+│ username (UNIQUE)    │  │    │ user_id (FK → users)     │
+│ email (UNIQUE)       │  │    │ name                     │
+│ password_hash        │  ├───>│ level, experience, coins │
+│ twofa_enabled        │  │    │ max_health, attack       │
+│ twofa_secret         │  │    │ defense, speed, critical │
+│ google_id (UNIQUE)   │  │    │ luck, stat_points        │
+│ avatar_url           │  │    │ elo_rating, wins, losses │
+│ created_at           │  │    │ sprite_body/hair/outfit  │
+│ updated_at           │  │    │ bonus_type, is_active    │
+└──────────────────────┘  │    │ slot_number              │
+          │               │    └────────────┬─────────────┘
+          │               │                 │
+          │               │                 ▼
+          │               │    ┌──────────────────────────┐
+          │               │    │      game_matches         │
+          │               │    ├──────────────────────────┤
+          │               │    │ id (PK, UUID)            │
+          │               │    │ player1_id (FK → chars)  │
+          │               │    │ player2_id (FK → chars)  │
+          │               │    │ winner_id (FK → chars)   │
+          │               │    │ match_type (ranked/etc)  │
+          │               │    │ duration_seconds         │
+          │               │    │ p1/p2_damage_dealt       │
+          │               │    │ p1/p2_elo_change         │
+          │               │    │ winner_xp, winner_coins  │
+          │               │    └──────────────────────────┘
+          │               │
+          ▼               │    ┌──────────────────────────┐
+┌──────────────────────┐  │    │        matches            │
+│      friendships     │  │    ├──────────────────────────┤
+├──────────────────────┤  │    │ id (PK)                  │
+│ id (PK)              │  ├───>│ player1_id (FK → users)  │
+│ user_id (FK → users) │  │    │ player2_id (FK → users)  │
+│ friend_id (FK →users)│  │    │ winner_id (FK → users)   │
+│ status (pending/     │  │    │ match_type, status       │
+│   accepted/blocked)  │  │    │ p1_score, p2_score       │
+│ created_at           │  │    │ started_at, ended_at     │
+└──────────────────────┘  │    └──────────────────────────┘
+                          │
+          ┌───────────────┤
+          │               │
+          ▼               │    ┌──────────────────────────┐
+┌──────────────────────┐  │    │       notifications       │
+│   refresh_tokens     │  │    ├──────────────────────────┤
+├──────────────────────┤  ├───>│ id (PK)                  │
+│ id (PK)              │  │    │ sender_id (FK → users)   │
+│ refresh_token_id     │  │    │ receiver_id (FK → users) │
+│ ip, user_agent       │  │    │ chat_id                  │
+│ user_id (FK → users) │  │    │ type (message/friend_req │
+│ device_id            │  │    │   /game_invite)          │
+│ is_valid             │  │    │ message, is_read         │
+│ expires_at           │  │    │ is_opened                │
+└──────────────────────┘  │    └──────────────────────────┘
+                          │
+          ┌───────────────┤
+          │               │
+          ▼               │    ┌──────────────────────────┐
+┌──────────────────────┐  │    │        blocks             │
+│        chats         │  │    ├──────────────────────────┤
+├──────────────────────┤  ├───>│ id (PK)                  │
+│ id (PK)              │  │    │ blocker_id (FK → users)  │
+│ created_at           │  │    │ blocked_id (FK → users)  │
+│ updated_at           │  │    │ is_active                │
+└──────┬───────────────┘  │    └──────────────────────────┘
+       │                  │
+       ▼                  │
+┌──────────────────────┐  │
+│  chat_participants   │  │
+├──────────────────────┤  │
+│ id (PK)              │◄─┘
+│ chat_id (FK → chats) │
+│ user_id (FK → users) │
+│ joined_at            │
+└──────┬───────────────┘
+       │
+       ▼
+┌──────────────────────┐
+│      messages        │
+├──────────────────────┤
+│ id (PK)              │
+│ chat_id (FK → chats) │
+│ sender_id (FK→users) │
+│ content              │
+│ is_read, read_at     │
+│ blocks_active        │
+└──────────────────────┘
+```
 
-**Main tables:** `users` (auth + profile), `characters` (stats, level, ELO), `matches` (PvP records), `friends` (relationships), `chats`/`messages` (chat system), `notifications`, `refresh_tokens`, `character_resources` (energy tracking)
+### Relationships at a Glance
 
-All managed through 13 Knex.js migration files.
+| Relationship | Type | Description |
+|---|---|---|
+| Users → Characters | One-to-Many | Each player can have multiple character slots |
+| Characters → Game Matches | Many-to-Many | Characters fight each other in ranked/friendly battles |
+| Users → Matches | Many-to-Many | Tracks PvP match records between players |
+| Users → Friendships | Many-to-Many (self) | Players can befriend, block, or have pending requests |
+| Users → Blocks | Many-to-Many (self) | Players can block each other |
+| Users → Chats | Many-to-Many | Via `chat_participants` join table |
+| Chats → Messages | One-to-Many | Each chat contains multiple messages |
+| Users → Notifications | One-to-Many | Friend requests, game invites, message alerts |
+| Users → Refresh Tokens | One-to-Many | JWT refresh tokens per device |
+
+All foreign keys use `ON DELETE CASCADE` to keep data consistent when a user or chat is deleted.
 
 ## Features
 
