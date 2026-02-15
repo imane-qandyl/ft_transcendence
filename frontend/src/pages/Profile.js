@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { CHARACTER_SPRITES } from '../constants/characters';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [character, setCharacter] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,27 @@ const Profile = () => {
   const [editEmail, setEditEmail] = useState('');
   const [editError, setEditError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const handleDeleteAccount = async () => {
+    if (!userData?.id) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.delete(`users/${userData.id}`);
+      logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setDeleteError(err.response?.data?.message || err.response?.data?.error || 'Failed to delete account');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -607,6 +630,107 @@ const Profile = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Delete Account Section */}
+      <div className="pixel-card p-4">
+        <div className="text-pixel-white text-sm mb-3 text-center">
+          {'[ DANGER ZONE ]'}
+        </div>
+        <div className="text-center">
+          <p className="text-pixel-mid text-xs mb-3">
+            Permanently delete your account and all associated data (characters, matches, messages, friends).
+          </p>
+          {deleteError && (
+            <div className="text-retro-red text-xs mb-3 pixel-text">{deleteError}</div>
+          )}
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{
+                fontFamily: 'inherit',
+                fontSize: '10px',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                color: '#fff',
+                background: '#c0392b',
+                border: 'none',
+                padding: '8px 20px',
+                cursor: 'pointer',
+                imageRendering: 'pixelated',
+                boxShadow: '3px 3px 0px #7b2d22',
+                transform: 'translate(0px, 0px)',
+                transition: 'transform 0.05s, box-shadow 0.05s',
+                userSelect: 'none',
+                outline: 'none',
+              }}
+              onMouseDown={e => {
+                e.currentTarget.style.transform = 'translate(2px, 2px)';
+                e.currentTarget.style.boxShadow = '1px 1px 0px #7b2d22';
+              }}
+              onMouseUp={e => {
+                e.currentTarget.style.transform = 'translate(0px, 0px)';
+                e.currentTarget.style.boxShadow = '3px 3px 0px #7b2d22';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translate(0px, 0px)';
+                e.currentTarget.style.boxShadow = '3px 3px 0px #7b2d22';
+              }}
+            >
+              Delete Account
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-retro-red text-xs pixel-text">
+                Are you sure? This action cannot be undone!
+              </p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  style={{
+                    fontFamily: 'inherit',
+                    fontSize: '10px',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    color: '#fff',
+                    background: isDeleting ? '#555' : '#e74c3c',
+                    border: 'none',
+                    padding: '8px 20px',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    imageRendering: 'pixelated',
+                    boxShadow: isDeleting ? '3px 3px 0px #333' : '3px 3px 0px #962d22',
+                    userSelect: 'none',
+                    outline: 'none',
+                  }}
+                >
+                  {isDeleting ? 'Deleting...' : 'Yes, Delete Forever'}
+                </button>
+                <button
+                  onClick={() => { setShowDeleteConfirm(false); setDeleteError(null); }}
+                  disabled={isDeleting}
+                  style={{
+                    fontFamily: 'inherit',
+                    fontSize: '10px',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    color: '#000',
+                    background: '#aaa',
+                    border: 'none',
+                    padding: '8px 20px',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    imageRendering: 'pixelated',
+                    boxShadow: '3px 3px 0px #666',
+                    userSelect: 'none',
+                    outline: 'none',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
     </div>

@@ -203,6 +203,52 @@ async function userRoutes(fastify, options) {
             });
         }
     });
+
+    // Delete user account (DELETE /users/:id)
+    fastify.delete("/:id", {
+        schema: {
+            params: {
+                type: 'object',
+                required: ['id'],
+                properties: {
+                    id: { type: 'integer', minimum: 1 }
+                }
+            }
+        },
+        preHandler: fastify.authenticate
+    }, async (request, reply) => {
+        try {
+            const requestedUserId = parseInt(request.params.id);
+            const currentUserId = request.user?.id || request.user?.user?.id;
+
+            // Users can only delete their own account
+            if (requestedUserId !== currentUserId) {
+                return reply.code(403).send({
+                    error: 'Forbidden',
+                    message: 'You can only delete your own account'
+                });
+            }
+
+            const user = await userModel.db("users").where({ id: requestedUserId }).first();
+            if (!user) {
+                return reply.code(404).send({
+                    error: 'Not Found',
+                    message: 'User not found'
+                });
+            }
+
+            // Delete user — cascading FKs handle related data cleanup
+            await userModel.db("users").where({ id: requestedUserId }).del();
+
+            return reply.code(204).send();
+        } catch (error) {
+            console.error('[DELETE USER] Error:', error);
+            return reply.code(500).send({
+                error: 'Internal Server Error',
+                message: 'Failed to delete account'
+            });
+        }
+    });
 }
 
 module.exports = userRoutes;
